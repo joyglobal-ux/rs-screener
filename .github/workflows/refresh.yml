@@ -1,0 +1,43 @@
+name: Daily data refresh
+
+on:
+  schedule:
+    # 04:00 UTC, Tue–Sat. Cron is always UTC (no DST), and 04:00 UTC lands a
+    # few hours after the US market close on Mon–Fri (ET), so each run captures
+    # that trading day's final close. Runs a FULL refresh: the $1B universe is
+    # re-screened every time, so newly qualifying names are added automatically.
+    - cron: "0 4 * * 2-6"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Refresh universe + returns
+        run: uv run python refresh.py
+
+      - name: Commit & push if data changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.js data.json universe.json
+          if git diff --staged --quiet; then
+            echo "No data changes."
+          else
+            git commit -m "data: daily refresh $(date -u +%Y-%m-%d)"
+            git push
+          fi
