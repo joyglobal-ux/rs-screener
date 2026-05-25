@@ -20,6 +20,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import yfinance as yf
 
@@ -95,6 +96,43 @@ def returns_for(close: pd.Series) -> tuple[dict[str, float | None], float | None
         else:
             out[key] = round((current / float(past) - 1.0) * 100.0, 2)
     return out, current, last_date
+
+
+def trend_quality_and_accel(close: pd.Series) -> tuple[float | None, float | None]:
+    """Return (trend_quality_R2, acceleration).
+
+    - Trend quality = R^2 of log(price) vs time over ~6 months (1.0 = a perfectly
+      straight up/down line; low = choppy). Measures *smoothness*, independent of
+      how big the move was — complements the RS Score (which captures the level).
+    - Acceleration = recent 3M return minus the prior 3M return (months -6..-3),
+      in percentage points. Positive = trend speeding up.
+    """
+    close = close.dropna()
+    if len(close) < 2:
+        return None, None
+    last = close.index[-1]
+
+    quality: float | None = None
+    w6 = close[close.index >= last - pd.DateOffset(months=6)]
+    if len(w6) >= 60:
+        y = np.log(w6.to_numpy(dtype=float))
+        x = np.arange(len(y), dtype=float)
+        ss_tot = float(np.sum((y - y.mean()) ** 2))
+        if ss_tot > 0:
+            slope, intercept = np.polyfit(x, y, 1)
+            ss_res = float(np.sum((y - (slope * x + intercept)) ** 2))
+            quality = round(1.0 - ss_res / ss_tot, 2)
+
+    accel: float | None = None
+    w3 = close[close.index >= last - pd.DateOffset(months=3)]
+    seg = close[(close.index >= last - pd.DateOffset(months=6))
+                & (close.index <= last - pd.DateOffset(months=3))]
+    if len(w3) >= 2 and len(seg) >= 5 and w3.iloc[0] > 0 and seg.iloc[0] > 0:
+        recent3 = w3.iloc[-1] / w3.iloc[0] - 1
+        prior3 = seg.iloc[-1] / seg.iloc[0] - 1
+        accel = round((recent3 - prior3) * 100.0, 1)
+
+    return quality, accel
 
 
 def extract_ticker_frame(data: pd.DataFrame, ticker: str, single: bool) -> pd.DataFrame | None:
@@ -188,7 +226,14 @@ def main() -> None:
             if price is None:
                 failed.append(t)
                 continue
-            results[t] = {"r": rets, "price": round(price, 2), "lastDate": last_date.strftime("%Y-%m-%d")}
+            quality, accel = trend_quality_and_accel(sub["Close"])
+            results[t] = {
+                "r": rets,
+                "price": round(price, 2),
+                "lastDate": last_date.strftime("%Y-%m-%d"),
+                "quality": quality,
+                "accel": accel,
+            }
         print(f"  {min(i+CHUNK, len(tickers))}/{len(tickers)} done", file=sys.stderr)
 
     if args.test:
@@ -224,6 +269,8 @@ def main() -> None:
                 "marketCap": m["marketCap"],
                 "price": r["price"],
                 "lastDate": r["lastDate"],
+                "quality": r["quality"],
+                "accel": r["accel"],
                 "r": r["r"],
             }
         )
@@ -238,6 +285,7 @@ def main() -> None:
         "periods": PERIOD_KEYS,
         "scoreWeights": SCORE_WEIGHTS,
         "scoreBasis": SCORE_BASIS,
+        "signalsBasis": "품질 = 6M 추세 직선성(log가격 R², 1=완벽직선) · 가속 = 최근3M − 직전3M (%p)",
         "count": len(stocks),
         "stocks": stocks,
     }

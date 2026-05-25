@@ -16,7 +16,7 @@
     font-size:13px;}
   a{color:var(--accent);text-decoration:none}
   a:hover{text-decoration:underline}
-  .wrap{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
+  .wrap{max-width:1460px;margin:0 auto;padding:18px 16px 60px}
   header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:4px}
   h1{font-size:18px;margin:0;font-weight:650;letter-spacing:-.2px}
   .sub{color:var(--muted);font-size:12px}
@@ -39,7 +39,7 @@
   .tab.active{background:var(--accent2);border-color:var(--accent2);color:#fff}
   .tab .dir{font-size:10px;opacity:.85;margin-left:5px}
 
-  .tablewrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .tablewrap{border:1px solid var(--border);border-radius:10px;overflow-x:auto;background:var(--panel)}
   table{border-collapse:collapse;width:100%}
   thead th{position:sticky;top:0;background:var(--panel2);z-index:2;
     text-align:right;padding:9px 10px;font-size:11.5px;color:var(--muted);
@@ -60,6 +60,7 @@
   .pos{color:var(--pos)} .neg{color:var(--neg)} .na{color:#4b5563}
   td.score{font-variant-numeric:tabular-nums;font-size:13px}
   td.score b{color:#eafff1}
+  td.qual{font-variant-numeric:tabular-nums;color:#cfe3ff}
   td.colsorted{background:rgba(59,130,246,.07)}
 
   .pager{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;color:var(--muted);font-size:12px}
@@ -119,11 +120,14 @@ const COLS = [
   {key:"name",  label:"종목명",align:"l", sortable:true},
   {key:"sector",label:"섹터", align:"l", sortable:true},
   {key:"score", label:"RS점수",align:"r", sortable:true},
+  {key:"quality",label:"품질", align:"r", sortable:true},
+  {key:"accel",  label:"가속", align:"r", sortable:true},
   {key:"price", label:"현재가",align:"r", sortable:true},
   {key:"marketCap",label:"시총",align:"r", sortable:true},
   ...PERIODS.map(p=>({key:"r."+p, label:PLABEL[p], align:"r", sortable:true, period:p})),
 ];
-const SORT_TABS = [{key:"score",label:"RS점수"}, ...PERIODS.map(p=>({key:"r."+p,label:PLABEL[p]}))];
+const SORT_TABS = [{key:"score",label:"RS점수"},{key:"quality",label:"품질"},{key:"accel",label:"가속"},
+  ...PERIODS.map(p=>({key:"r."+p,label:PLABEL[p]}))];
 
 let DATA=null, rows=[], view=[];
 let sortKey="score", sortDir="desc", page=0, pageSize=100;
@@ -139,6 +143,17 @@ function scoreCell(v){
   if(v==null) return `<td class="num na">—</td>`;
   const a=(v/99*0.34).toFixed(3);            // green heat, stronger = brighter
   return `<td class="num score" style="background:rgba(34,197,94,${a})"><b>${v}</b></td>`;
+}
+function qualCell(v){                          // trend smoothness R^2, 0..1
+  if(v==null) return `<td class="num na">—</td>`;
+  const a=(Math.max(0,v)*0.34).toFixed(3);   // blue heat
+  return `<td class="num qual" style="background:rgba(96,165,250,${a})">${v.toFixed(2)}</td>`;
+}
+function accelCell(v){                         // recent3M - prior3M, in %p
+  if(v==null) return `<td class="num na">—</td>`;
+  const cls=v>0?"pos":(v<0?"neg":"");
+  const arr=v>5?" ↑":(v<-5?" ↓":"");
+  return `<td class="num ${cls}">${(v>=0?"+":"")+v.toFixed(0)}%p${arr}</td>`;
 }
 function getVal(row,key){ return key.startsWith("r.") ? row.r[key.slice(2)] : row[key]; }
 
@@ -183,6 +198,8 @@ function render(){
     cells+=`<td class="l name" title="${esc(r.name)}">${esc(r.name)}</td>`;
     cells+=`<td class="l sector">${esc(r.sector)}</td>`;
     cells+=scoreCell(r.score);
+    cells+=qualCell(r.quality);
+    cells+=accelCell(r.accel);
     cells+=`<td class="num">$${r.price.toFixed(2)}</td>`;
     cells+=`<td class="num">${fmtCap(r.marketCap)}</td>`;
     for(const p of PERIODS){
@@ -254,7 +271,8 @@ function init(){
     `기준일 <b>${DATA.asOf}</b> · <b>${DATA.count.toLocaleString()}</b>개 종목 · `+
     `시총 ≥ $${(DATA.minMarketCap/1e9).toFixed(0)}B · 분할조정 주가수익률(배당 제외) · `+
     `<span title="${DATA.generatedAt}">갱신 ${DATA.generatedAt.slice(0,10)}</span>`+
-    (DATA.scoreBasis ? `<br><b>RS점수</b> = ${esc(DATA.scoreBasis)} → 1~99 (99=최강)` : "");
+    (DATA.scoreBasis ? `<br><b>RS점수</b> = ${esc(DATA.scoreBasis)} → 1~99 (99=최강)` : "")+
+    (DATA.signalsBasis ? `<br>${esc(DATA.signalsBasis)}` : "");
   // sector dropdown
   const secs=[...new Set(rows.map(r=>r.sector))].filter(Boolean).sort();
   const sel=document.getElementById("sector");
