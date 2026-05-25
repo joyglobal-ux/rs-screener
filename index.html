@@ -119,12 +119,12 @@ const COLS = [
   {key:"ticker",label:"티커", align:"l", sortable:true},
   {key:"name",  label:"종목명",align:"l", sortable:true},
   {key:"sector",label:"섹터", align:"l", sortable:true},
-  {key:"score", label:"RS점수",align:"r", sortable:true},
-  {key:"quality",label:"품질", align:"r", sortable:true},
-  {key:"accel",  label:"가속", align:"r", sortable:true},
   {key:"price", label:"현재가",align:"r", sortable:true},
   {key:"marketCap",label:"시총",align:"r", sortable:true},
   ...PERIODS.map(p=>({key:"r."+p, label:PLABEL[p], align:"r", sortable:true, period:p})),
+  {key:"score", label:"RS점수",align:"r", sortable:true},
+  {key:"quality",label:"품질", align:"r", sortable:true},
+  {key:"accel",  label:"가속", align:"r", sortable:true},
 ];
 const SORT_TABS = [{key:"score",label:"RS점수"},{key:"quality",label:"품질"},{key:"accel",label:"가속"},
   ...PERIODS.map(p=>({key:"r."+p,label:PLABEL[p]}))];
@@ -197,9 +197,6 @@ function render(){
     cells+=`<td class="l"><a class="tkr" href="https://finance.yahoo.com/quote/${r.ticker}" target="_blank" rel="noopener">${r.ticker}</a></td>`;
     cells+=`<td class="l name" title="${esc(r.name)}">${esc(r.name)}</td>`;
     cells+=`<td class="l sector">${esc(r.sector)}</td>`;
-    cells+=scoreCell(r.score);
-    cells+=qualCell(r.quality);
-    cells+=accelCell(r.accel);
     cells+=`<td class="num">$${r.price.toFixed(2)}</td>`;
     cells+=`<td class="num">${fmtCap(r.marketCap)}</td>`;
     for(const p of PERIODS){
@@ -207,6 +204,9 @@ function render(){
       const sortedCol = sortKey==="r."+p ? " colsorted":"";
       cells+=`<td class="num ${pctClass(v)}${sortedCol}">${fmtPct(v)}</td>`;
     }
+    cells+=scoreCell(r.score);
+    cells+=qualCell(r.quality);
+    cells+=accelCell(r.accel);
     html+=`<tr>${cells}</tr>`;
   });
   tb.innerHTML=html;
