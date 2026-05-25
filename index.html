@@ -126,8 +126,8 @@ const COLS = [
   {key:"quality",label:"품질", align:"r", sortable:true},
   {key:"accel",  label:"가속", align:"r", sortable:true},
 ];
-const SORT_TABS = [{key:"score",label:"RS점수"},{key:"quality",label:"품질"},{key:"accel",label:"가속"},
-  ...PERIODS.map(p=>({key:"r."+p,label:PLABEL[p]}))];
+const SORT_TABS = [...PERIODS.map(p=>({key:"r."+p,label:PLABEL[p]})),
+  {key:"score",label:"RS점수"},{key:"quality",label:"품질"},{key:"accel",label:"가속"}];
 
 let DATA=null, rows=[], view=[];
 let sortKey="score", sortDir="desc", page=0, pageSize=100;
