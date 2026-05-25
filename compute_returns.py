@@ -31,6 +31,44 @@ LOOKBACK_DAYS = 420  # > 365 buffer for 1Y + holidays
 CHUNK = 100
 PERIOD_KEYS = ["1W", "1M", "3M", "6M", "1Y", "YTD"]
 
+# RS Score: trend-following tilt on intermediate-term momentum.
+# 1W is excluded (short-term mean reversion) and YTD is excluded (variable
+# length). 1M is kept small despite short-term reversal, per user choice.
+# "1Y" is the 12-month leg. Weights sum to 100.
+SCORE_WEIGHTS = {"1M": 10, "3M": 36, "6M": 32, "1Y": 22}
+SCORE_REQUIRED = "6M"  # need ~6 months of history to earn a score
+SCORE_BASIS = "1M·3M·6M·12M 가중 백분위 (추세추종 틸트 10/36/32/22), 1W·YTD 제외"
+
+
+def compute_scores(stocks: list[dict]) -> None:
+    """Add an IBD-style 1-99 'score' to each stock, in place.
+
+    For each scoring period, rank stocks into a 0-100 cross-sectional percentile
+    (robust to outliers like a +8000% mover). Take the weighted average of the
+    available period percentiles (weights renormalized when a period is missing),
+    requiring at least ~6 months of history. Finally re-rank that composite into
+    a 1-99 score so 99 = strongest relative strength.
+    """
+    if not stocks:
+        return
+    df = pd.DataFrame([{p: s["r"].get(p) for p in SCORE_WEIGHTS} for s in stocks])
+    pct = pd.DataFrame({p: df[p].rank(pct=True) * 100.0 for p in SCORE_WEIGHTS})
+    weights = pd.Series({p: float(w) for p, w in SCORE_WEIGHTS.items()})
+
+    composite = []
+    for i in range(len(df)):
+        row = pct.iloc[i].dropna()
+        if SCORE_REQUIRED not in row.index:
+            composite.append(float("nan"))
+            continue
+        w = weights[row.index]
+        composite.append(float((row * w).sum() / w.sum()))
+
+    final = (pd.Series(composite).rank(pct=True) * 98 + 1).round()
+    for i, s in enumerate(stocks):
+        v = final.iloc[i]
+        s["score"] = int(v) if pd.notna(v) else None
+
 
 def period_targets(last_date: pd.Timestamp) -> dict[str, pd.Timestamp]:
     return {
@@ -82,11 +120,31 @@ def download_chunk(tickers: list[str], start: str) -> pd.DataFrame:
     )
 
 
+def write_outputs(payload: dict) -> None:
+    OUT.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    # data.js lets index.html load via <script> so it works from file:// (no CORS).
+    (HERE / "data.js").write_text(
+        "window.SCREENER_DATA = " + json.dumps(payload, ensure_ascii=False) + ";",
+        encoding="utf-8",
+    )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--test", action="store_true", help="run a small verification set")
     ap.add_argument("--limit", type=int, default=0, help="cap number of tickers")
+    ap.add_argument("--rescore", action="store_true",
+                    help="recompute RS scores from existing data.json (no download)")
     args = ap.parse_args()
+
+    if args.rescore:
+        payload = json.loads(OUT.read_text(encoding="utf-8"))
+        compute_scores(payload["stocks"])
+        payload["scoreWeights"] = SCORE_WEIGHTS
+        payload["scoreBasis"] = SCORE_BASIS
+        write_outputs(payload)
+        print(f"rescored {len(payload['stocks'])} stocks", file=sys.stderr)
+        return
 
     if args.test:
         meta = [
@@ -170,21 +228,20 @@ def main() -> None:
             }
         )
 
+    compute_scores(stocks)
+
     payload = {
         "asOf": as_of,
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "minMarketCap": 1_000_000_000,
         "returnBasis": "price return, split-adjusted, dividends excluded",
         "periods": PERIOD_KEYS,
+        "scoreWeights": SCORE_WEIGHTS,
+        "scoreBasis": SCORE_BASIS,
         "count": len(stocks),
         "stocks": stocks,
     }
-    OUT.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-    # data.js lets index.html load via <script> so it works from file:// (no CORS).
-    (HERE / "data.js").write_text(
-        "window.SCREENER_DATA = " + json.dumps(payload, ensure_ascii=False) + ";",
-        encoding="utf-8",
-    )
+    write_outputs(payload)
     print(
         f"wrote {len(stocks)} stocks to {OUT.name} (asOf {as_of}); "
         f"failed {len(failed)}",
