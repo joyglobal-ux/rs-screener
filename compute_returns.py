@@ -25,12 +25,39 @@ import pandas as pd
 import yfinance as yf
 
 HERE = Path(__file__).parent
-UNIVERSE = HERE / "universe.json"
-OUT = HERE / "data.json"
 
 LOOKBACK_DAYS = 420  # > 365 buffer for 1Y + holidays
 CHUNK = 100
 PERIOD_KEYS = ["1W", "1M", "3M", "6M", "1Y", "YTD"]
+
+MARKET_META = {
+    "us": {
+        "code": "us",
+        "label": "US · NYSE / Nasdaq / AMEX",
+        "currency": "USD",
+        "currencySymbol": "$",
+        "minMarketCap": 1_000_000_000,
+        "minMarketCapLabel": "$1B",
+        "tickerUrl": "https://finance.yahoo.com/quote/{ticker}",
+    },
+    "kr": {
+        "code": "kr",
+        "label": "KR · KOSPI + KOSDAQ",
+        "currency": "KRW",
+        "currencySymbol": "₩",
+        "minMarketCap": 100_000_000_000,
+        "minMarketCapLabel": "1,000억 원",
+        "tickerUrl": "https://finance.naver.com/item/main.naver?code={krxCode}",
+    },
+}
+
+
+def paths_for(market: str) -> dict[str, Path]:
+    return {
+        "universe": HERE / f"universe-{market}.json",
+        "data_json": HERE / f"data-{market}.json",
+        "data_js": HERE / f"data-{market}.js",
+    }
 
 # RS Score: trend-following tilt on intermediate-term momentum.
 # 1W is excluded (short-term mean reversion) and YTD is excluded (variable
@@ -158,30 +185,37 @@ def download_chunk(tickers: list[str], start: str) -> pd.DataFrame:
     )
 
 
-def write_outputs(payload: dict) -> None:
-    OUT.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-    # data.js lets index.html load via <script> so it works from file:// (no CORS).
-    (HERE / "data.js").write_text(
-        "window.SCREENER_DATA = " + json.dumps(payload, ensure_ascii=False) + ";",
+def write_outputs(payload: dict, paths: dict[str, Path]) -> None:
+    paths["data_json"].write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    # data-<market>.js lets index.html load via <script> (works from file:// too).
+    global_name = "SCREENER_DATA_" + payload["market"]["code"].upper()
+    paths["data_js"].write_text(
+        f"window.{global_name} = " + json.dumps(payload, ensure_ascii=False) + ";",
         encoding="utf-8",
     )
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--market", choices=["us", "kr"], default="us",
+                    help="which market universe to process")
     ap.add_argument("--test", action="store_true", help="run a small verification set")
     ap.add_argument("--limit", type=int, default=0, help="cap number of tickers")
     ap.add_argument("--rescore", action="store_true",
-                    help="recompute RS scores from existing data.json (no download)")
+                    help="recompute RS scores from existing data file (no download)")
     args = ap.parse_args()
 
+    paths = paths_for(args.market)
+
     if args.rescore:
-        payload = json.loads(OUT.read_text(encoding="utf-8"))
+        payload = json.loads(paths["data_json"].read_text(encoding="utf-8"))
         compute_scores(payload["stocks"])
         payload["scoreWeights"] = SCORE_WEIGHTS
         payload["scoreBasis"] = SCORE_BASIS
-        write_outputs(payload)
-        print(f"rescored {len(payload['stocks'])} stocks", file=sys.stderr)
+        payload["market"] = MARKET_META[args.market]
+        payload["minMarketCap"] = MARKET_META[args.market]["minMarketCap"]
+        write_outputs(payload, paths)
+        print(f"rescored {len(payload['stocks'])} {args.market.upper()} stocks", file=sys.stderr)
         return
 
     if args.test:
@@ -191,7 +225,7 @@ def main() -> None:
                        "BRK-B", "JPM", "WMT", "AVGO", "LLY"]
         ]
     else:
-        meta = json.loads(UNIVERSE.read_text(encoding="utf-8"))
+        meta = json.loads(paths["universe"].read_text(encoding="utf-8"))
     if args.limit:
         meta = meta[: args.limit]
 
@@ -260,27 +294,35 @@ def main() -> None:
         if t not in results:
             continue
         r = results[t]
-        stocks.append(
-            {
-                "ticker": t,
-                "name": m["name"],
-                "sector": m["sector"],
-                "industry": m["industry"],
-                "marketCap": m["marketCap"],
-                "price": r["price"],
-                "lastDate": r["lastDate"],
-                "quality": r["quality"],
-                "accel": r["accel"],
-                "r": r["r"],
-            }
-        )
+        stock = {
+            "ticker": t,
+            "name": m["name"],
+            "sector": m["sector"],
+            "industry": m["industry"],
+            "marketCap": m["marketCap"],
+            "price": r["price"],
+            "lastDate": r["lastDate"],
+            "quality": r["quality"],
+            "accel": r["accel"],
+            "r": r["r"],
+        }
+        # Carry market-specific identifiers through to the data file so the UI
+        # can build proper links (e.g., KR uses Naver, which keys off krxCode).
+        for k in ("krxCode", "subMarket"):
+            if k in m:
+                stock[k] = m[k]
+        if "market" in m:  # KOSPI / KOSDAQ tag on KR rows
+            stock["subMarket"] = m["market"]
+        stocks.append(stock)
 
     compute_scores(stocks)
 
+    market_meta = MARKET_META[args.market]
     payload = {
+        "market": market_meta,
         "asOf": as_of,
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "minMarketCap": 1_000_000_000,
+        "minMarketCap": market_meta["minMarketCap"],
         "returnBasis": "price return, split-adjusted, dividends excluded",
         "periods": PERIOD_KEYS,
         "scoreWeights": SCORE_WEIGHTS,
@@ -289,9 +331,9 @@ def main() -> None:
         "count": len(stocks),
         "stocks": stocks,
     }
-    write_outputs(payload)
+    write_outputs(payload, paths)
     print(
-        f"wrote {len(stocks)} stocks to {OUT.name} (asOf {as_of}); "
+        f"wrote {len(stocks)} {args.market.upper()} stocks to {paths['data_json'].name} (asOf {as_of}); "
         f"failed {len(failed)}",
         file=sys.stderr,
     )

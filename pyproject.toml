@@ -6,7 +6,10 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "curl-cffi>=0.15.0",
+    "finance-datareader>=0.9.202",
     "pandas>=3.0.3",
+    "pykrx>=1.0.51",
     "requests>=2.34.2",
+    "setuptools<81",
     "yfinance>=1.4.0",
 ]

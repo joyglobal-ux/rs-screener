@@ -14,7 +14,7 @@ from pathlib import Path
 import requests
 
 MIN_MARKET_CAP = 1_000_000_000  # $1B
-OUT = Path(__file__).parent / "universe.json"
+OUT = Path(__file__).parent / "universe-us.json"
 
 URL = "https://api.nasdaq.com/api/screener/stocks"
 HEADERS = {

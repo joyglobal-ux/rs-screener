@@ -2,11 +2,12 @@ name: Daily data refresh
 
 on:
   schedule:
-    # 04:00 UTC, Tue–Sat. Cron is always UTC (no DST), and 04:00 UTC lands a
-    # few hours after the US market close on Mon–Fri (ET), so each run captures
-    # that trading day's final close. Runs a FULL refresh: the $1B universe is
+    # 09:00 UTC, Tue–Sat. One run captures BOTH markets fresh:
+    #   - KR (KOSPI/KOSDAQ): today's close, finished 06:30 UTC (~2.5h earlier)
+    #   - US (NYSE/Nasdaq):  prev session close (Mon 20:00 UTC -> Tue 09:00 UTC)
+    # Cron is always UTC (no DST). Runs a FULL refresh: both universes are
     # re-screened every time, so newly qualifying names are added automatically.
-    - cron: "0 4 * * 2-6"
+    - cron: "0 9 * * 2-6"
   workflow_dispatch: {}
 
 permissions:
@@ -34,7 +35,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.js data.json universe.json
+          git add data-us.js data-us.json universe-us.json \
+                  data-kr.js data-kr.json universe-kr.json
           if git diff --staged --quiet; then
             echo "No data changes."
           else
