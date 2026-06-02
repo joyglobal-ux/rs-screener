@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>US RS Screener · 미국 주가상승률 스크리너</title>
+<title>RS Screener · 미국·한국 주가상승률 스크리너</title>
 <style>
   :root{
     --bg:#0e1117; --panel:#161b22; --panel2:#1c2230; --border:#2a3140;
@@ -67,6 +67,19 @@
   td.score b{color:#eafff1}
   td.qual{font-variant-numeric:tabular-nums;color:#cfe3ff}
   td.colsorted{background:rgba(59,130,246,.07)}
+  th.star,td.star{width:34px;text-align:center;padding-left:8px;padding-right:4px}
+  td.star{cursor:pointer;color:#3a4150;font-size:15px;user-select:none}
+  td.star:hover{color:#f5c451}
+  td.star.on{color:#f5c451}
+  .tab.dim{opacity:.55}
+  .tab.dir-toggle{margin-left:4px;border-style:dashed}
+  .watch-label{display:inline-flex;align-items:center;gap:6px;background:var(--panel);
+    border:1px solid var(--border);border-radius:7px;padding:6px 11px;font-size:12.5px;
+    color:var(--text);cursor:pointer;user-select:none;font-weight:600}
+  .watch-label input{margin:0;cursor:pointer}
+  .watch-label .cnt{color:var(--muted);font-weight:600}
+  .sorthint{color:var(--muted);font-size:11.5px;margin:-4px 0 14px}
+  .sorthint b{color:#9fc1ff;font-weight:600}
 
   .pager{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;color:var(--muted);font-size:12px}
   .pager button{background:var(--panel);border:1px solid var(--border);color:var(--text);
@@ -93,6 +106,7 @@
     <input id="search" type="text" placeholder="티커 / 종목명 검색…" autocomplete="off">
     <select id="sector"><option value="">전체 섹터</option></select>
     <select id="mcap"></select>
+    <label class="watch-label"><input type="checkbox" id="watchonly"> ⭐ 관심종목만 <span class="cnt" id="watchcnt"></span></label>
     <span class="spacer"></span>
     <select id="pagesize">
       <option value="50">50개씩</option>
@@ -103,6 +117,7 @@
   </div>
 
   <div class="tabs" id="tabs"></div>
+  <div class="sorthint" id="sorthint"></div>
 
   <div class="tablewrap">
     <table>
@@ -121,6 +136,7 @@
 const PERIODS = ["1W","1M","3M","6M","1Y","YTD"];
 const PLABEL = {"1W":"1주","1M":"1개월","3M":"3개월","6M":"6개월","1Y":"1년","YTD":"YTD"};
 const COLS = [
+  {key:"_star", label:"",      align:"l", sortable:false},
   {key:"rank",  label:"#",    align:"l", sortable:false},
   {key:"ticker",label:"티커", align:"l", sortable:true},
   {key:"name",  label:"종목명",align:"l", sortable:true},
@@ -134,9 +150,16 @@ const COLS = [
 ];
 const SORT_TABS = [...PERIODS.map(p=>({key:"r."+p,label:PLABEL[p]})),
   {key:"score",label:"RS점수"},{key:"quality",label:"품질"},{key:"accel",label:"가속"}];
+const METRIC_KEYS = new Set(SORT_TABS.map(t=>t.key));
+const TAB_LABEL = Object.fromEntries(SORT_TABS.map(t=>[t.key,t.label]));
+const COL_LABEL = Object.fromEntries(COLS.map(c=>[c.key,c.label]));
 
 let DATA=null, rows=[], view=[];
-let market="us", sortKey="score", sortDir="desc", page=0, pageSize=100;
+let market="us", page=0, pageSize=100;
+// Sort state: "composite" = avg percentile of `picks` (multi-metric strength);
+// "column" = single direct-value sort on a non-metric column (price, name…).
+let sortMode="composite", picks=["score"], compDir="desc", colKey="score", colDir="desc";
+let watch=new Set(), watchOnly=false;
 
 const MARKETS = {
   us: {
@@ -196,32 +219,75 @@ function cmp(a,b,key,dir){
   return dir==="asc" ? x-y : y-x;
 }
 
+// Cross-sectional percentile (0..1) of every sortable metric across the whole
+// market, cached on each row as r._pct[key]. Lets the composite sort average
+// "rank within the market" across the picked metrics — robust to outliers.
+function precomputePercentiles(){
+  for(const key of METRIC_KEYS){
+    const vals = rows.map(r=>({r, v:getVal(r,key)})).filter(o=>typeof o.v==="number");
+    vals.sort((a,b)=>a.v-b.v);
+    const n=vals.length;
+    vals.forEach((o,i)=>{ (o.r._pct || (o.r._pct={}))[key] = n>1 ? i/(n-1) : 1; });
+  }
+}
+function compositeVal(r){
+  let sum=0, cnt=0;
+  for(const k of picks){ const p=r._pct ? r._pct[k] : undefined; if(p!=null){ sum+=p; cnt++; } }
+  return cnt ? sum/cnt : null;
+}
+function isActiveKey(key){
+  return sortMode==="composite" ? picks.includes(key) : key===colKey;
+}
+function activeDir(){ return sortMode==="composite" ? compDir : colDir; }
+
+function sortView(){
+  if(sortMode==="composite"){
+    view.sort((a,b)=>{
+      const x=compositeVal(a), y=compositeVal(b);
+      if(x==null && y==null) return 0;
+      if(x==null) return 1; if(y==null) return -1;
+      return compDir==="desc" ? y-x : x-y;
+    });
+  } else {
+    view.sort((a,b)=>cmp(a,b,colKey,colDir));
+  }
+}
+
 function applyFilters(){
   const q=document.getElementById("search").value.trim().toLowerCase();
   const sec=document.getElementById("sector").value;
   const minCap=parseFloat(document.getElementById("mcap").value)||0;
   view = rows.filter(r=>{
+    if(watchOnly && !watch.has(r.ticker)) return false;
     if(r.marketCap<minCap) return false;
     if(sec && r.sector!==sec) return false;
     if(q && !(r.ticker.toLowerCase().includes(q) || r.name.toLowerCase().includes(q))) return false;
     return true;
   });
-  view.sort((a,b)=>cmp(a,b,sortKey,sortDir));
+  sortView();
   page=0;
   render();
 }
 
 function render(){
-  renderTabs(); renderHead();
+  renderTabs(); renderHead(); renderHint();
   const tb=document.getElementById("tbody");
   const empty=document.getElementById("empty");
-  if(view.length===0){ tb.innerHTML=""; empty.style.display="block"; renderPager(); return; }
+  if(view.length===0){
+    tb.innerHTML="";
+    empty.textContent = watchOnly && watch.size===0
+      ? "관심종목이 없습니다. 표의 ☆를 눌러 추가하세요."
+      : "조건에 맞는 종목이 없습니다.";
+    empty.style.display="block"; renderPager(); return;
+  }
   empty.style.display="none";
   const start=page*pageSize, slice=view.slice(start,start+pageSize);
   let html="";
   slice.forEach((r,i)=>{
     const rank=start+i+1;
-    let cells=`<td class="rank num">${rank}</td>`;
+    const on = watch.has(r.ticker);
+    let cells=`<td class="star${on?" on":""}" data-tkr="${esc(r.ticker)}" title="관심종목">${on?"★":"☆"}</td>`;
+    cells+=`<td class="rank num">${rank}</td>`;
     cells+=`<td class="l"><a class="tkr" href="${MARKETS[market].tickerUrl(r)}" target="_blank" rel="noopener">${r.ticker.replace(/\.(KS|KQ)$/,'')}</a></td>`;
     cells+=`<td class="l name" title="${esc(r.name)}">${esc(r.name)}</td>`;
     cells+=`<td class="l sector">${esc(r.sector)}</td>`;
@@ -229,7 +295,7 @@ function render(){
     cells+=`<td class="num">${fmtCap(r.marketCap)}</td>`;
     for(const p of PERIODS){
       const v=r.r[p];
-      const sortedCol = sortKey==="r."+p ? " colsorted":"";
+      const sortedCol = isActiveKey("r."+p) ? " colsorted":"";
       cells+=`<td class="num ${pctClass(v)}${sortedCol}">${fmtPct(v)}</td>`;
     }
     cells+=scoreCell(r.score);
@@ -241,35 +307,63 @@ function render(){
   renderPager();
 }
 
+// Toggle a metric in/out of the composite pick set (switches to composite mode).
+function togglePick(key){
+  sortMode="composite";
+  const i=picks.indexOf(key);
+  if(i>=0) picks.splice(i,1); else picks.push(key);
+  if(picks.length===0) picks.push("score");   // never leave it empty
+  applyFilters();
+}
+
 function renderTabs(){
   const el=document.getElementById("tabs");
-  el.innerHTML = SORT_TABS.map(t=>{
-    const active = sortKey===t.key;
-    const dir = active ? `<span class="dir">${sortDir==="desc"?"▼ 높은순":"▲ 낮은순"}</span>`:"";
-    return `<div class="tab ${active?"active":""}" data-k="${t.key}">${t.label}${dir}</div>`;
+  const comp = sortMode==="composite";
+  let html = SORT_TABS.map(t=>{
+    const on = comp && picks.includes(t.key);
+    return `<div class="tab ${on?"active":(comp?"dim":"")}" data-k="${t.key}">${t.label}</div>`;
   }).join("");
-  el.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
-    const key=t.dataset.k;
-    if(sortKey===key) sortDir = sortDir==="desc"?"asc":"desc";
-    else { sortKey=key; sortDir="desc"; }
-    view.sort((a,b)=>cmp(a,b,sortKey,sortDir)); page=0; render();
-  });
+  // direction toggle for whichever sort is active
+  const d = activeDir();
+  html += `<div class="tab dir-toggle" id="dirToggle" title="정렬 방향">${d==="desc"?"▼ 높은순":"▲ 낮은순"}</div>`;
+  el.innerHTML = html;
+  el.querySelectorAll(".tab[data-k]").forEach(t=>t.onclick=()=>togglePick(t.dataset.k));
+  document.getElementById("dirToggle").onclick=()=>{
+    if(sortMode==="composite") compDir = compDir==="desc"?"asc":"desc";
+    else colDir = colDir==="desc"?"asc":"desc";
+    applyFilters();
+  };
+}
+
+function renderHint(){
+  const el=document.getElementById("sorthint");
+  if(sortMode==="composite"){
+    const labels = picks.map(k=>TAB_LABEL[k]);
+    el.innerHTML = picks.length>=2
+      ? `복합 강도순 ${compDir==="desc"?"▼":"▲"} · <b>${esc(labels.join(" + "))}</b> ${picks.length}개 지표의 시장 내 순위 평균`
+      : `정렬: <b>${esc(labels[0])}</b> ${compDir==="desc"?"높은순":"낮은순"} · 탭을 여러 개 누르면 복합 강도순으로 묶입니다`;
+  } else {
+    el.innerHTML = `정렬: <b>${esc(COL_LABEL[colKey]||colKey)}</b> ${colDir==="desc"?"내림차순":"오름차순"}`;
+  }
 }
 
 function renderHead(){
   const tr=document.getElementById("thead");
   tr.innerHTML = COLS.map(c=>{
-    const sorted = (c.key===sortKey);
-    const arr = sorted ? `<span class="arr">${sortDir==="desc"?"▼":"▲"}</span>` : "";
-    return `<th class="${c.align==='l'?'l':''} ${sorted?'sorted':''}" data-k="${c.key}" data-s="${c.sortable}">${c.label}${arr}</th>`;
+    const sorted = c.sortable && isActiveKey(c.key);
+    const arr = sorted ? `<span class="arr">${activeDir()==="desc"?"▼":"▲"}</span>` : "";
+    const label = c.key==="_star" ? "⭐" : c.label;
+    return `<th class="${c.align==='l'?'l':''} ${c.key==='_star'?'star':''} ${sorted?'sorted':''}" data-k="${c.key}" data-s="${c.sortable}">${label}${arr}</th>`;
   }).join("");
   tr.querySelectorAll("th").forEach(th=>{
     if(th.dataset.s!=="true") return;
     th.onclick=()=>{
       const key=th.dataset.k;
-      if(sortKey===key) sortDir=sortDir==="desc"?"asc":"desc";
-      else { sortKey=key; sortDir = key==="ticker"||key==="name"||key==="sector" ? "asc":"desc"; }
-      view.sort((a,b)=>cmp(a,b,sortKey,sortDir)); page=0; render();
+      if(METRIC_KEYS.has(key)){ togglePick(key); return; }   // metric header = composite toggle
+      sortMode="column";
+      if(colKey===key) colDir=colDir==="desc"?"asc":"desc";
+      else { colKey=key; colDir = (key==="ticker"||key==="name"||key==="sector") ? "asc":"desc"; }
+      applyFilters();
     };
   });
 }
@@ -288,11 +382,24 @@ function renderPager(){
 
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
 
+function loadWatch(m){
+  try{ return new Set(JSON.parse(localStorage.getItem("rs-watch-"+m)||"[]")); }catch(e){ return new Set(); }
+}
+function saveWatch(){
+  try{ localStorage.setItem("rs-watch-"+market, JSON.stringify([...watch])); }catch(e){}
+}
+function updateWatchCount(){
+  document.getElementById("watchcnt").textContent = watch.size ? `(${watch.size})` : "";
+}
+
 function setMarket(m){
   const data = window["SCREENER_DATA_"+m.toUpperCase()];
   if(!data) return false;
   market = m;
   DATA = data; rows = DATA.stocks;
+  precomputePercentiles();
+  watch = loadWatch(m);
+  updateWatchCount();
   // toggle UI
   document.querySelectorAll("#marketToggle button").forEach(b=>b.classList.toggle("active", b.dataset.m===m));
   // market-cap dropdown rebuilt per market
@@ -325,8 +432,18 @@ function init(){
   document.getElementById("search").addEventListener("input", applyFilters);
   document.getElementById("sector").addEventListener("change", applyFilters);
   document.getElementById("mcap").addEventListener("change", applyFilters);
+  document.getElementById("watchonly").addEventListener("change", e=>{ watchOnly=e.target.checked; applyFilters(); });
   document.getElementById("pagesize").addEventListener("change", e=>{ pageSize=parseInt(e.target.value); page=0; render(); });
   document.querySelectorAll("#marketToggle button").forEach(b=>{ b.onclick=()=>setMarket(b.dataset.m); });
+  // star toggle via event delegation (rows are re-rendered as innerHTML)
+  document.getElementById("tbody").addEventListener("click", e=>{
+    const cell = e.target.closest(".star"); if(!cell) return;
+    const tkr = cell.dataset.tkr;
+    if(watch.has(tkr)) watch.delete(tkr); else watch.add(tkr);
+    saveWatch(); updateWatchCount();
+    if(watchOnly) applyFilters();
+    else { cell.classList.toggle("on"); cell.textContent = watch.has(tkr) ? "★" : "☆"; }
+  });
   let saved="us"; try{ saved=localStorage.getItem("rs-market")||"us"; }catch(e){}
   if(!setMarket(saved)) setMarket(saved==="us"?"kr":"us");
 }
