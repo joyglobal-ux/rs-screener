@@ -109,12 +109,35 @@ def period_targets(last_date: pd.Timestamp) -> dict[str, pd.Timestamp]:
     }
 
 
+def is_halted(close: pd.Series) -> bool:
+    """True if the stock was effectively halted (suspended) for much of the
+    trailing year — its price stuck at one value across the whole window.
+
+    Such names (e.g. a KOSDAQ suspension that resumes after a capital reduction)
+    show a flat line that then jumps once on resumption; the period returns then
+    just capture that one structural jump (often == the reverse-split ratio),
+    not a real price trend. Threshold is deliberately extreme (one identical
+    close on >50% of trailing-year days) so normal low-volatility names are
+    never caught — a real stock essentially never repeats one exact price for
+    half a year.
+    """
+    tail = close.tail(252)
+    if len(tail) < 60:
+        return False
+    modal_frac = tail.round(4).value_counts(normalize=True).iloc[0]
+    return modal_frac > 0.5
+
+
 def returns_for(close: pd.Series) -> tuple[dict[str, float | None], float | None, pd.Timestamp | None]:
     close = close.dropna()
     if len(close) < 2:
         return {k: None for k in PERIOD_KEYS}, None, None
     last_date = close.index[-1]
     current = float(close.iloc[-1])
+    if is_halted(close):
+        # Keep the latest price for display, but null the returns — they would be
+        # a halt/capital-reduction artifact, not a real return.
+        return {k: None for k in PERIOD_KEYS}, current, last_date
     out: dict[str, float | None] = {}
     for key, target in period_targets(last_date).items():
         past = close.asof(target)
@@ -135,7 +158,7 @@ def trend_quality_and_accel(close: pd.Series) -> tuple[float | None, float | Non
       in percentage points. Positive = trend speeding up.
     """
     close = close.dropna()
-    if len(close) < 2:
+    if len(close) < 2 or is_halted(close):
         return None, None
     last = close.index[-1]
 
