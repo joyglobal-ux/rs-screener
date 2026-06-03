@@ -80,6 +80,16 @@
   .watch-label .cnt{color:var(--muted);font-weight:600}
   .sorthint{color:var(--muted);font-size:11.5px;margin:-4px 0 14px}
   .sorthint b{color:#9fc1ff;font-weight:600}
+  .view-toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px}
+  .view-toggle button{background:var(--panel);color:var(--muted);border:none;padding:7px 16px;font-size:12.5px;font-weight:700;cursor:pointer}
+  .view-toggle button:hover{color:var(--text)}
+  .view-toggle button.active{background:var(--accent2);color:#fff}
+  td.sec-name{cursor:pointer;font-weight:600}
+  tbody tr.sec-row:hover td{background:var(--rowhover)}
+  .heat{font-variant-numeric:tabular-nums}
+  .bar-wrap{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+  .bar-track{flex:0 0 70px;height:8px;background:#222a36;border-radius:4px;overflow:hidden}
+  .bar-fill{height:100%;background:#22c55e;border-radius:4px}
 
   .pager{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;color:var(--muted);font-size:12px}
   .pager button{background:var(--panel);border:1px solid var(--border);color:var(--text);
@@ -102,7 +112,12 @@
   </header>
   <div class="meta" id="meta"></div>
 
-  <div class="controls">
+  <div class="view-toggle" id="viewToggle">
+    <button data-v="stocks">종목</button>
+    <button data-v="sectors">섹터 RS</button>
+  </div>
+
+  <div class="controls" id="controls">
     <input id="search" type="text" placeholder="티커 / 종목명 검색…" autocomplete="off">
     <select id="sector"><option value="">전체 섹터</option></select>
     <select id="mcap"></select>
@@ -119,7 +134,7 @@
   <div class="tabs" id="tabs"></div>
   <div class="sorthint" id="sorthint"></div>
 
-  <div class="tablewrap">
+  <div class="tablewrap" id="tablewrap">
     <table>
       <thead><tr id="thead"></tr></thead>
       <tbody id="tbody"></tbody>
@@ -128,6 +143,14 @@
   </div>
 
   <div class="pager" id="pager"></div>
+
+  <div class="sorthint" id="sectorhint" style="display:none"></div>
+  <div class="tablewrap" id="sectorwrap" style="display:none">
+    <table>
+      <thead><tr id="sec-thead"></tr></thead>
+      <tbody id="sec-tbody"></tbody>
+    </table>
+  </div>
 </div>
 
 <script src="data-us.js"></script>
@@ -160,6 +183,17 @@ let market="us", page=0, pageSize=100;
 // "column" = single direct-value sort on a non-metric column (price, name…).
 let sortMode="composite", picks=["score"], compDir="desc", colKey="score", colDir="desc";
 let watch=new Set(), watchOnly=false;
+let viewMode="stocks", secSortKey="medScore", secSortDir="desc";
+const SECTOR_COLS=[
+  {key:"sector",  label:"섹터",      align:"l"},
+  {key:"n",       label:"종목수",    align:"r"},
+  {key:"medScore",label:"RS 중앙값", align:"r"},
+  {key:"breadth", label:"RS≥90 비중",align:"r"},
+  {key:"p1M",     label:"1M",        align:"r"},
+  {key:"p3M",     label:"3M",        align:"r"},
+  {key:"p6M",     label:"6M",        align:"r"},
+  {key:"p1Y",     label:"12M",       align:"r"},
+];
 
 const MARKETS = {
   us: {
@@ -382,6 +416,83 @@ function renderPager(){
 
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
 
+function median(a){ if(!a.length) return null; const b=[...a].sort((x,y)=>x-y); const m=b.length>>1; return b.length%2 ? b[m] : (b[m-1]+b[m])/2; }
+function heatGreen(v,max){ const a=(Math.max(0,Math.min(v,max))/max*0.34).toFixed(3); return `background:rgba(34,197,94,${a})`; }
+
+// Aggregate the loaded universe into per-sector strength. RS Score is already a
+// market-wide percentile, so a sector's median RS = where its typical stock
+// sits in the whole market; breadth = share of names that are genuine leaders
+// (RS≥90); the 1M..12M cells are median per-period percentiles → rotation.
+function sectorAgg(){
+  const by={};
+  rows.forEach(r=>{ const s=r.sector||"기타"; (by[s]||(by[s]=[])).push(r); });
+  const out=[];
+  for(const sector in by){
+    const list=by[sector];
+    const scores=list.map(r=>r.score).filter(v=>v!=null);
+    if(scores.length<3) continue;                 // skip micro sectors (noise)
+    const agg={sector, n:list.length,
+      medScore: median(scores),
+      breadth: scores.filter(v=>v>=90).length/scores.length*100};
+    for(const p of ["1M","3M","6M","1Y"]){
+      const pcts=list.map(r=> r._pct ? r._pct["r."+p] : undefined).filter(v=>v!=null).map(v=>v*100);
+      agg["p"+p]=median(pcts);
+    }
+    out.push(agg);
+  }
+  return out;
+}
+
+function renderSectors(){
+  const data=sectorAgg();
+  data.sort((a,b)=>{
+    const x=a[secSortKey], y=b[secSortKey];
+    if(typeof x==="string") return secSortDir==="asc" ? (x<y?-1:x>y?1:0) : (x>y?-1:x<y?1:0);
+    if(x==null) return 1; if(y==null) return -1;
+    return secSortDir==="asc" ? x-y : y-x;
+  });
+  const th=document.getElementById("sec-thead");
+  th.innerHTML=SECTOR_COLS.map(c=>{
+    const sorted=c.key===secSortKey;
+    const arr=sorted?`<span class="arr">${secSortDir==="desc"?"▼":"▲"}</span>`:"";
+    return `<th class="${c.align==='l'?'l':''} ${sorted?'sorted':''}" data-k="${c.key}">${c.label}${arr}</th>`;
+  }).join("");
+  th.querySelectorAll("th").forEach(h=>h.onclick=()=>{
+    const k=h.dataset.k;
+    if(secSortKey===k) secSortDir=secSortDir==="desc"?"asc":"desc";
+    else { secSortKey=k; secSortDir = k==="sector"?"asc":"desc"; }
+    renderSectors();
+  });
+  const tb=document.getElementById("sec-tbody");
+  tb.innerHTML=data.map(a=>{
+    let c=`<td class="l sec-name" data-sec="${esc(a.sector)}">${esc(a.sector)}</td>`;
+    c+=`<td class="num">${a.n}</td>`;
+    c+=`<td class="num heat" style="${heatGreen(a.medScore,99)}"><b>${a.medScore.toFixed(0)}</b></td>`;
+    c+=`<td class="num"><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${a.breadth.toFixed(0)}%"></div></div>${a.breadth.toFixed(0)}%</div></td>`;
+    for(const p of ["1M","3M","6M","1Y"]){
+      const v=a["p"+p];
+      c+= v==null ? `<td class="num na">—</td>` : `<td class="num heat" style="${heatGreen(v,100)}">${v.toFixed(0)}</td>`;
+    }
+    return `<tr class="sec-row">${c}</tr>`;
+  }).join("");
+  tb.querySelectorAll(".sec-name").forEach(td=>td.onclick=()=>{
+    document.getElementById("sector").value=td.dataset.sec;
+    setViewMode("stocks"); applyFilters();
+  });
+  document.getElementById("sectorhint").innerHTML =
+    `<b>RS 중앙값</b> = 섹터 종목들의 시장 백분위 중앙값 · <b>RS≥90 비중</b> = 강세 폭(breadth) · `+
+    `<b>1M~12M</b> = 기간별 시장 백분위 중앙값(로테이션) · 섹터 클릭 → 해당 종목 목록 · 종목 3개 미만 섹터 제외`;
+}
+
+function setViewMode(v){
+  viewMode=v;
+  document.querySelectorAll("#viewToggle button").forEach(b=>b.classList.toggle("active", b.dataset.v===v));
+  ["controls","tabs","sorthint","tablewrap","pager"].forEach(id=>document.getElementById(id).style.display = v==="stocks"?"":"none");
+  ["sectorhint","sectorwrap"].forEach(id=>document.getElementById(id).style.display = v==="sectors"?"":"none");
+  if(v==="sectors") renderSectors(); else render();
+}
+function refreshView(){ if(viewMode==="sectors") renderSectors(); else applyFilters(); }
+
 function loadWatch(m){
   try{ return new Set(JSON.parse(localStorage.getItem("rs-watch-"+m)||"[]")); }catch(e){ return new Set(); }
 }
@@ -419,7 +530,7 @@ function setMarket(m){
     (DATA.signalsBasis ? `<br>${esc(DATA.signalsBasis)}` : "");
   try{ localStorage.setItem("rs-market", m); }catch(e){}
   page=0;
-  applyFilters();
+  refreshView();
   return true;
 }
 
@@ -435,6 +546,7 @@ function init(){
   document.getElementById("watchonly").addEventListener("change", e=>{ watchOnly=e.target.checked; applyFilters(); });
   document.getElementById("pagesize").addEventListener("change", e=>{ pageSize=parseInt(e.target.value); page=0; render(); });
   document.querySelectorAll("#marketToggle button").forEach(b=>{ b.onclick=()=>setMarket(b.dataset.m); });
+  document.querySelectorAll("#viewToggle button").forEach(b=>{ b.onclick=()=>setViewMode(b.dataset.v); });
   // star toggle via event delegation (rows are re-rendered as innerHTML)
   document.getElementById("tbody").addEventListener("click", e=>{
     const cell = e.target.closest(".star"); if(!cell) return;
@@ -446,6 +558,7 @@ function init(){
   });
   let saved="us"; try{ saved=localStorage.getItem("rs-market")||"us"; }catch(e){}
   if(!setMarket(saved)) setMarket(saved==="us"?"kr":"us");
+  setViewMode("stocks");   // sets toggle active state + correct visibility
 }
 init();
 </script>
