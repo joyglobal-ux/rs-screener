@@ -1,13 +1,16 @@
-name: Daily data refresh
+name: Market data refresh
 
 on:
   schedule:
-    # 09:00 UTC, Tue–Sat. One run captures BOTH markets fresh:
-    #   - KR (KOSPI/KOSDAQ): today's close, finished 06:30 UTC (~2.5h earlier)
-    #   - US (NYSE/Nasdaq):  prev session close (Mon 20:00 UTC -> Tue 09:00 UTC)
-    # Cron is always UTC (no DST). Runs a FULL refresh: both universes are
-    # re-screened every time, so newly qualifying names are added automatically.
-    - cron: "0 9 * * 2-6"
+    # Each market refreshes right after ITS OWN close, so both are same-day fresh.
+    # Cron is always UTC (no DST), Mon–Fri = each market's trading days.
+    #   KR (KOSPI/KOSDAQ): close 06:30 UTC -> run 07:00 UTC
+    #   US (NYSE/Nasdaq):  close 20:00–21:00 UTC -> run 21:30 UTC
+    # A full refresh re-screens that market's universe, so newly qualifying
+    # names are added automatically. (Holidays still fire but find no new bar;
+    # asOf simply stays at the last trading day.)
+    - cron: "0 7 * * 1-5"
+    - cron: "30 21 * * 1-5"
   workflow_dispatch: {}
 
 permissions:
@@ -23,13 +26,22 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Pick market from schedule
+        id: pick
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 7 * * 1-5")   echo "args=--kr" >> "$GITHUB_OUTPUT"; echo "label=KR" >> "$GITHUB_OUTPUT" ;;
+            "30 21 * * 1-5") echo "args=--us" >> "$GITHUB_OUTPUT"; echo "label=US" >> "$GITHUB_OUTPUT" ;;
+            *)               echo "args="     >> "$GITHUB_OUTPUT"; echo "label=ALL" >> "$GITHUB_OUTPUT" ;;
+          esac
+
       - name: Install uv
         uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
 
-      - name: Refresh universe + returns
-        run: uv run python refresh.py
+      - name: Refresh universe + returns (${{ steps.pick.outputs.label }})
+        run: uv run python refresh.py ${{ steps.pick.outputs.args }}
 
       - name: Commit & push if data changed
         run: |
@@ -40,6 +52,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No data changes."
           else
-            git commit -m "data: daily refresh $(date -u +%Y-%m-%d)"
+            git commit -m "data: ${{ steps.pick.outputs.label }} refresh $(date -u +%Y-%m-%d)"
+            git pull --rebase --autostash origin main || true
             git push
           fi
