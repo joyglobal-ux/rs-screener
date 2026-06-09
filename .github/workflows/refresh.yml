@@ -2,15 +2,15 @@ name: Market data refresh
 
 on:
   schedule:
-    # Each market refreshes right after ITS OWN close, so both are same-day fresh.
-    # Cron is always UTC (no DST), Mon–Fri = each market's trading days.
-    #   KR (KOSPI/KOSDAQ): close 06:30 UTC -> run 07:00 UTC
-    #   US (NYSE/Nasdaq):  close 20:00–21:00 UTC -> run 21:30 UTC
-    # A full refresh re-screens that market's universe, so newly qualifying
-    # names are added automatically. (Holidays still fire but find no new bar;
-    # asOf simply stays at the last trading day.)
-    - cron: "0 7 * * 1-5"
-    - cron: "30 21 * * 1-5"
+    # Each market refreshes right after ITS OWN close (so both are same-day
+    # fresh), plus a catch-up run a few hours later in case the first attempt's
+    # data source was down. Cron is always UTC (no DST).
+    #   KR (close 06:30 UTC):  primary 07:00, catch-up 11:00   (Mon–Fri)
+    #   US (close ~20:00 UTC):  primary 21:30, catch-up 02:00   (next day, Tue–Sat)
+    - cron: "0 7 * * 1-5"     # KR primary
+    - cron: "0 11 * * 1-5"    # KR catch-up
+    - cron: "30 21 * * 1-5"   # US primary
+    - cron: "0 2 * * 2-6"     # US catch-up
   workflow_dispatch: {}
 
 permissions:
@@ -23,6 +23,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
 
@@ -30,9 +31,9 @@ jobs:
         id: pick
         run: |
           case "${{ github.event.schedule }}" in
-            "0 7 * * 1-5")   echo "args=--kr" >> "$GITHUB_OUTPUT"; echo "label=KR" >> "$GITHUB_OUTPUT" ;;
-            "30 21 * * 1-5") echo "args=--us" >> "$GITHUB_OUTPUT"; echo "label=US" >> "$GITHUB_OUTPUT" ;;
-            *)               echo "args="     >> "$GITHUB_OUTPUT"; echo "label=ALL" >> "$GITHUB_OUTPUT" ;;
+            "0 7 * * 1-5"|"0 11 * * 1-5")    echo "args=--kr" >> "$GITHUB_OUTPUT"; echo "label=KR" >> "$GITHUB_OUTPUT" ;;
+            "30 21 * * 1-5"|"0 2 * * 2-6")   echo "args=--us" >> "$GITHUB_OUTPUT"; echo "label=US" >> "$GITHUB_OUTPUT" ;;
+            *)                               echo "args="     >> "$GITHUB_OUTPUT"; echo "label=ALL" >> "$GITHUB_OUTPUT" ;;
           esac
 
       - name: Install uv
@@ -41,7 +42,19 @@ jobs:
           enable-cache: true
 
       - name: Refresh universe + returns (${{ steps.pick.outputs.label }})
-        run: uv run python refresh.py ${{ steps.pick.outputs.args }}
+        run: |
+          # Retry: bulk price/universe sources (yfinance, KRX) are occasionally
+          # flaky and a hard failure would otherwise leave data stale until the
+          # next scheduled run. 3 attempts with backoff clears transient errors.
+          for attempt in 1 2 3; do
+            echo "::group::refresh attempt $attempt"
+            if uv run python refresh.py ${{ steps.pick.outputs.args }}; then
+              echo "::endgroup::"; echo "refresh ok on attempt $attempt"; exit 0
+            fi
+            echo "::endgroup::"; echo "attempt $attempt failed"
+            [ "$attempt" -lt 3 ] && sleep 90
+          done
+          echo "all 3 attempts failed"; exit 1
 
       - name: Commit & push if data changed
         run: |
