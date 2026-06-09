@@ -26,9 +26,10 @@ import yfinance as yf
 
 HERE = Path(__file__).parent
 
-LOOKBACK_DAYS = 420  # > 365 buffer for 1Y + holidays
+LOOKBACK_DAYS = 760  # ~520 trading days: covers 1Y returns + MA200 + deviation
 CHUNK = 100
 PERIOD_KEYS = ["1W", "1M", "3M", "6M", "1Y", "YTD"]
+SERIES_DAYS = 380  # trailing trading days of close kept for the deviation chart
 
 MARKET_META = {
     "us": {
@@ -57,6 +58,7 @@ def paths_for(market: str) -> dict[str, Path]:
         "universe": HERE / f"universe-{market}.json",
         "data_json": HERE / f"data-{market}.json",
         "data_js": HERE / f"data-{market}.js",
+        "series_js": HERE / f"series-{market}.js",
     }
 
 # RS Score: trend-following tilt on intermediate-term momentum.
@@ -185,6 +187,32 @@ def trend_quality_and_accel(close: pd.Series) -> tuple[float | None, float | Non
     return quality, accel
 
 
+def deviation_metrics(close: pd.Series) -> dict | None:
+    """Disparity (이격도) of the latest close from its moving averages.
+
+    - dev50/dev200 = close/MA(n) − 1 in %. Raw distance above/below the trend.
+    - heat (0-100) = percentile of the CURRENT 50D deviation within this stock's
+      own trailing ~1y daily 50D-deviation distribution. Normalizing against the
+      stock's own history makes it comparable across names — a high-vol leader
+      routinely sits +30% above its MA (that's its normal), so raw % alone
+      over-flags it; heat asks "is THIS stock unusually stretched for itself?".
+    """
+    close = close.dropna()
+    if len(close) < 50:
+        return None
+    cur = float(close.iloc[-1])
+    ma50 = close.rolling(50).mean()
+    ma200 = close.rolling(200).mean()
+    dev50 = round((cur / ma50.iloc[-1] - 1) * 100, 1) if pd.notna(ma50.iloc[-1]) and ma50.iloc[-1] > 0 else None
+    dev200 = round((cur / ma200.iloc[-1] - 1) * 100, 1) if pd.notna(ma200.iloc[-1]) and ma200.iloc[-1] > 0 else None
+
+    heat = None
+    dev50_hist = (close / ma50 - 1).dropna().tail(252)
+    if len(dev50_hist) >= 60 and dev50 is not None:
+        heat = int(round((dev50_hist <= dev50_hist.iloc[-1]).mean() * 100))
+    return {"dev50": dev50, "dev200": dev200, "heat": heat}
+
+
 def extract_ticker_frame(data: pd.DataFrame, ticker: str, single: bool) -> pd.DataFrame | None:
     """Pull a single ticker's OHLC+actions frame out of a yf.download result."""
     if single:
@@ -214,6 +242,48 @@ def write_outputs(payload: dict, paths: dict[str, Path]) -> None:
     global_name = "SCREENER_DATA_" + payload["market"]["code"].upper()
     paths["data_js"].write_text(
         f"window.{global_name} = " + json.dumps(payload, ensure_ascii=False) + ";",
+        encoding="utf-8",
+    )
+
+
+def _compact_price(v: float) -> float | int | None:
+    if pd.isna(v):
+        return None
+    v = round(float(v), 2)
+    return int(v) if v == int(v) else v
+
+
+def build_series(stocks: list[dict], results: dict) -> tuple[list[str], dict]:
+    """Build a compact close-price time series per stock on a shared market
+    trading-day axis. Each stock stores {o: offset-into-axis, c: [closes...]}
+    so the deviation chart can be drawn client-side (MA/deviation derived there).
+    """
+    all_dates: set = set()
+    for s in stocks:
+        all_dates.update(results[s["ticker"]]["sclose"].index)
+    axis = sorted(all_dates)[-SERIES_DAYS:]
+    if not axis:
+        return [], {}
+    axis_dates = [d.strftime("%Y-%m-%d") for d in axis]
+    series: dict = {}
+    for s in stocks:
+        sc = results[s["ticker"]]["sclose"]
+        sc = sc[sc.index >= axis[0]]
+        if len(sc) < 2:
+            continue
+        o = next((i for i, d in enumerate(axis) if d >= sc.index[0]), None)
+        if o is None:
+            continue
+        reidx = sc.reindex(axis[o:])
+        series[s["ticker"]] = {"o": o, "c": [_compact_price(v) for v in reidx.to_numpy()]}
+    return axis_dates, series
+
+
+def write_series(path: Path, market: str, as_of: str, axis_dates: list[str], series: dict) -> None:
+    payload = {"asOf": as_of, "dates": axis_dates, "series": series}
+    name = "SCREENER_SERIES_" + market.upper()
+    path.write_text(
+        f"window.{name} = " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";",
         encoding="utf-8",
     )
 
@@ -283,13 +353,18 @@ def main() -> None:
             if price is None:
                 failed.append(t)
                 continue
+            clos = sub["Close"].dropna()
+            halted = is_halted(clos)
             quality, accel = trend_quality_and_accel(sub["Close"])
+            dev = None if halted else deviation_metrics(sub["Close"])
             results[t] = {
                 "r": rets,
                 "price": round(price, 2),
                 "lastDate": last_date.strftime("%Y-%m-%d"),
                 "quality": quality,
                 "accel": accel,
+                "dev": dev,
+                "sclose": clos.tail(SERIES_DAYS),  # for the deviation chart
             }
         print(f"  {min(i+CHUNK, len(tickers))}/{len(tickers)} done", file=sys.stderr)
 
@@ -327,6 +402,7 @@ def main() -> None:
             "lastDate": r["lastDate"],
             "quality": r["quality"],
             "accel": r["accel"],
+            "dev": r["dev"],
             "r": r["r"],
         }
         # Carry market-specific identifiers through to the data file so the UI
@@ -350,11 +426,15 @@ def main() -> None:
         "periods": PERIOD_KEYS,
         "scoreWeights": SCORE_WEIGHTS,
         "scoreBasis": SCORE_BASIS,
-        "signalsBasis": "품질 = 6M 추세 직선성(log가격 R², 1=완벽직선) · 가속 = 최근3M − 직전3M (%p)",
+        "signalsBasis": "품질 = 6M 추세 직선성(log가격 R², 1=완벽직선) · 가속 = 최근3M − 직전3M (%p) · "
+                         "이격 = 현재가 vs MA50/MA200 (%) · 과열도 = 50D 이격의 자기 1년 분포 내 백분위(0~100)",
         "count": len(stocks),
         "stocks": stocks,
     }
     write_outputs(payload, paths)
+    axis_dates, series = build_series(stocks, results)
+    write_series(paths["series_js"], args.market, as_of, axis_dates, series)
+    print(f"  series-{args.market}.js: {len(series)} stocks × ~{len(axis_dates)}d", file=sys.stderr)
     print(
         f"wrote {len(stocks)} {args.market.upper()} stocks to {paths['data_json'].name} (asOf {as_of}); "
         f"failed {len(failed)}",

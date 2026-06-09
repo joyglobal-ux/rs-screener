@@ -90,6 +90,32 @@
   .bar-wrap{display:flex;align-items:center;gap:8px;justify-content:flex-end}
   .bar-track{flex:0 0 70px;height:8px;background:#222a36;border-radius:4px;overflow:hidden}
   .bar-fill{height:100%;background:#22c55e;border-radius:4px}
+  td.heatdev{font-variant-numeric:tabular-nums;font-weight:600}
+  .tkr.chartlink{cursor:pointer;color:var(--accent)}
+  .tkr.chartlink:hover{text-decoration:underline}
+  /* deviation chart modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(5,8,14,.78);z-index:50;display:none;
+    align-items:center;justify-content:center;padding:24px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    width:min(1080px,96vw);max-height:92vh;overflow:auto;padding:18px 20px 22px}
+  .modal-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .modal-head h2{font-size:16px;margin:0;font-weight:700}
+  .modal-head .mname{color:var(--muted);font-size:12.5px}
+  .modal-head .x{margin-left:auto;background:var(--panel2);border:1px solid var(--border);
+    color:var(--text);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:15px}
+  .modal-ctl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+  .modal-ctl input[type=range]{accent-color:var(--accent);width:130px}
+  .modal-ctl .win{color:var(--pos);font-weight:700;min-width:42px}
+  .modal-ext{color:var(--accent);font-size:12px}
+  .stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .stat{flex:1 1 120px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .stat .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  .stat .val{font-size:18px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+  .stat .sub{color:var(--muted);font-size:11px;margin-top:2px}
+  #devChart{width:100%;height:420px;display:block}
+  .chart-legend{display:flex;gap:16px;justify-content:center;color:var(--muted);font-size:12px;margin-top:8px}
+  .chart-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
 
   .pager{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;color:var(--muted);font-size:12px}
   .pager button{background:var(--panel);border:1px solid var(--border);color:var(--text);
@@ -153,6 +179,30 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="mTicker"></h2>
+      <span class="mname" id="mName"></span>
+      <div class="modal-ctl">MA <input type="range" id="mWin" min="5" max="200" step="5" value="50"><span class="win" id="mWinL">50D</span></div>
+      <a class="modal-ext" id="mExt" target="_blank" rel="noopener">외부차트 ↗</a>
+      <button class="x" id="mClose">✕</button>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="lbl">Latest Close</div><div class="val" id="sClose">—</div><div class="sub" id="sCloseD"></div></div>
+      <div class="stat"><div class="lbl">Moving Average</div><div class="val" id="sMA">—</div><div class="sub" id="sMAL"></div></div>
+      <div class="stat"><div class="lbl">이격도 (Deviation)</div><div class="val" id="sDev">—</div><div class="sub">Close vs MA</div></div>
+      <div class="stat"><div class="lbl">과열도 (Heat)</div><div class="val" id="sHeat">—</div><div class="sub">자기 1년 분포 percentile</div></div>
+    </div>
+    <canvas id="devChart"></canvas>
+    <div class="chart-legend">
+      <span><i style="background:#5eb3f6"></i>종가</span>
+      <span><i style="background:#f5c451"></i>이동평균</span>
+      <span><i style="background:#22c55e"></i>이격% (우축)</span>
+    </div>
+  </div>
+</div>
+
 <script src="data-us.js"></script>
 <script src="data-kr.js"></script>
 <script>
@@ -170,6 +220,9 @@ const COLS = [
   {key:"score", label:"RS점수",align:"r", sortable:true},
   {key:"quality",label:"품질", align:"r", sortable:true},
   {key:"accel",  label:"가속", align:"r", sortable:true},
+  {key:"dev.heat",  label:"과열도", align:"r", sortable:true},
+  {key:"dev.dev50", label:"이격50", align:"r", sortable:true},
+  {key:"dev.dev200",label:"이격200",align:"r", sortable:true},
 ];
 const SORT_TABS = [...PERIODS.map(p=>({key:"r."+p,label:PLABEL[p]})),
   {key:"score",label:"RS점수"},{key:"quality",label:"품질"},{key:"accel",label:"가속"}];
@@ -240,7 +293,21 @@ function accelCell(v){                         // recent3M - prior3M, in %p
   const arr=v>5?" ↑":(v<-5?" ↓":"");
   return `<td class="num ${cls}">${(v>=0?"+":"")+v.toFixed(0)}%p${arr}</td>`;
 }
-function getVal(row,key){ return key.startsWith("r.") ? row.r[key.slice(2)] : row[key]; }
+function heatCell(v){                           // 과열도 0-100, amber→red as it rises
+  if(v==null) return `<td class="num na">—</td>`;
+  const a=(v/100*0.55).toFixed(3);             // warmer = more stretched = caution
+  return `<td class="num heatdev" style="background:rgba(239,108,68,${a})">${v}</td>`;
+}
+function devCell(v){                            // close vs MA, signed %
+  if(v==null) return `<td class="num na">—</td>`;
+  const cls=v>0?"pos":(v<0?"neg":"");
+  return `<td class="num ${cls}">${(v>=0?"+":"")+v.toFixed(1)}%</td>`;
+}
+function getVal(row,key){
+  if(key.startsWith("r.")) return row.r[key.slice(2)];
+  if(key.startsWith("dev.")) return row.dev ? row.dev[key.slice(4)] : null;
+  return row[key];
+}
 
 function cmp(a,b,key,dir){
   let x=getVal(a,key), y=getVal(b,key);
@@ -322,7 +389,7 @@ function render(){
     const on = watch.has(r.ticker);
     let cells=`<td class="star${on?" on":""}" data-tkr="${esc(r.ticker)}" title="관심종목">${on?"★":"☆"}</td>`;
     cells+=`<td class="rank num">${rank}</td>`;
-    cells+=`<td class="l"><a class="tkr" href="${MARKETS[market].tickerUrl(r)}" target="_blank" rel="noopener">${r.ticker.replace(/\.(KS|KQ)$/,'')}</a></td>`;
+    cells+=`<td class="l"><span class="tkr chartlink" data-tkr="${esc(r.ticker)}" title="이격도 차트 보기">${r.ticker.replace(/\.(KS|KQ)$/,'')}</span></td>`;
     cells+=`<td class="l name" title="${esc(r.name)}">${esc(r.name)}</td>`;
     cells+=`<td class="l sector">${esc(r.sector)}</td>`;
     cells+=`<td class="num">${fmtPrice(r.price)}</td>`;
@@ -335,6 +402,10 @@ function render(){
     cells+=scoreCell(r.score);
     cells+=qualCell(r.quality);
     cells+=accelCell(r.accel);
+    const dv=r.dev||{};
+    cells+=heatCell(dv.heat);
+    cells+=devCell(dv.dev50);
+    cells+=devCell(dv.dev200);
     html+=`<tr>${cells}</tr>`;
   });
   tb.innerHTML=html;
@@ -534,6 +605,94 @@ function setMarket(m){
   return true;
 }
 
+// ---------- Deviation chart (lazy-loaded per-market close series) ----------
+let chartTkr=null, chartWin=50, chartData=null;
+function loadSeries(m){
+  return new Promise((resolve,reject)=>{
+    const have=window["SCREENER_SERIES_"+m.toUpperCase()];
+    if(have){ resolve(have); return; }
+    const s=document.createElement("script");
+    s.src="series-"+m+".js";
+    s.onload=()=>resolve(window["SCREENER_SERIES_"+m.toUpperCase()]);
+    s.onerror=()=>reject(new Error("series load failed"));
+    document.head.appendChild(s);
+  });
+}
+function sma(arr,w){
+  const out=new Array(arr.length).fill(null);
+  for(let i=w-1;i<arr.length;i++){
+    let sum=0, ok=true;
+    for(let j=i-w+1;j<=i;j++){ const v=arr[j]; if(v==null){ok=false;break;} sum+=v; }
+    if(ok) out[i]=sum/w;
+  }
+  return out;
+}
+async function openChart(tkr){
+  const row=rows.find(r=>r.ticker===tkr); if(!row) return;
+  chartTkr=tkr; chartData=null;
+  document.getElementById("mTicker").textContent=tkr.replace(/\.(KS|KQ)$/,'');
+  document.getElementById("mName").textContent=row.name;
+  document.getElementById("mExt").href=MARKETS[market].tickerUrl(row);
+  document.getElementById("sHeat").textContent=row.dev&&row.dev.heat!=null?row.dev.heat:"—";
+  document.getElementById("modalBg").classList.add("open");
+  let ser;
+  try{ ser=await loadSeries(market); }
+  catch(e){ document.getElementById("sClose").textContent="로드 실패"; return; }
+  const entry=ser.series[tkr];
+  if(!entry){ document.getElementById("sClose").textContent="시계열 없음"; return; }
+  chartData={dates: ser.dates.slice(entry.o), closes: entry.c, heat: row.dev&&row.dev.heat};
+  drawChart();
+}
+function closeChart(){ document.getElementById("modalBg").classList.remove("open"); chartTkr=null; }
+function fmtAxis(v){ if(Math.abs(v)>=1e6) return (v/1e6).toFixed(1)+"M"; if(Math.abs(v)>=1e3) return (v/1e3).toFixed(0)+"k"; return v.toFixed(0); }
+
+function drawChart(){
+  if(!chartData) return;
+  const {dates,closes}=chartData, win=chartWin, n=closes.length;
+  const ma=sma(closes,win);
+  const dev=closes.map((c,i)=> (c!=null&&ma[i]!=null&&ma[i]>0)?(c/ma[i]-1)*100:null);
+  const lastC=closes[n-1], lastMA=ma[n-1], lastDev=dev[n-1];
+  // stat cards
+  document.getElementById("sClose").textContent=lastC!=null?fmtPrice(lastC):"—";
+  document.getElementById("sCloseD").textContent=dates[n-1]||"";
+  document.getElementById("sMA").textContent=lastMA!=null?fmtPrice(lastMA):"—";
+  document.getElementById("sMAL").textContent="MA "+win+"D";
+  const sd=document.getElementById("sDev");
+  sd.textContent=lastDev!=null?((lastDev>=0?"+":"")+lastDev.toFixed(2)+"%"):"—";
+  sd.style.color=lastDev>=0?"var(--pos)":"var(--neg)";
+  // canvas
+  const cv=document.getElementById("devChart"), dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth||1000, H=cv.clientHeight||420;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  const x0=64,x1=W-52,y0=14,y1=H-42;
+  let pmin=Infinity,pmax=-Infinity;
+  for(const v of closes) if(v!=null){pmin=Math.min(pmin,v);pmax=Math.max(pmax,v);}
+  for(const v of ma) if(v!=null){pmin=Math.min(pmin,v);pmax=Math.max(pmax,v);}
+  if(!isFinite(pmin)) return;
+  let dmax=5; for(const v of dev) if(v!=null) dmax=Math.max(dmax,Math.abs(v)); dmax*=1.1;
+  const pPad=(pmax-pmin)*0.06||1, pLo=pmin-pPad, pHi=pmax+pPad;
+  const xAt=i=> x0+(n<=1?0:(i/(n-1))*(x1-x0));
+  const yP=v=> y1-((v-pLo)/(pHi-pLo))*(y1-y0);
+  const mid=(y0+y1)/2, yD=v=> mid-(v/dmax)*((y1-y0)/2);
+  ctx.font="11px -apple-system,sans-serif"; ctx.textBaseline="middle";
+  for(let k=0;k<=4;k++){ const v=pLo+(pHi-pLo)*k/4, y=yP(v);
+    ctx.strokeStyle="rgba(255,255,255,.06)"; ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();
+    ctx.fillStyle="#8b949e"; ctx.textAlign="right"; ctx.fillText(fmtAxis(v),x0-6,y); }
+  ctx.textAlign="left";
+  for(let k=-2;k<=2;k++){ const v=dmax*k/2, y=yD(v); ctx.fillStyle="#6f7b8a"; ctx.fillText((v>=0?"+":"")+v.toFixed(0)+"%",x1+6,y); }
+  ctx.strokeStyle="rgba(255,255,255,.14)"; ctx.beginPath();ctx.moveTo(x0,yD(0));ctx.lineTo(x1,yD(0));ctx.stroke();
+  const bw=Math.max(1,(x1-x0)/n*0.7);
+  for(let i=0;i<n;i++){ const v=dev[i]; if(v==null) continue; const x=xAt(i),y=yD(v),yz=yD(0);
+    ctx.fillStyle=v>=0?"rgba(34,197,94,.5)":"rgba(248,113,113,.55)"; ctx.fillRect(x-bw/2,Math.min(y,yz),bw,Math.abs(y-yz)||1); }
+  let started=false; ctx.strokeStyle="#5eb3f6"; ctx.lineWidth=1.6; ctx.beginPath();
+  for(let i=0;i<n;i++){ const v=closes[i]; if(v==null){started=false;continue;} const x=xAt(i),y=yP(v); started?ctx.lineTo(x,y):ctx.moveTo(x,y); started=true; } ctx.stroke();
+  started=false; ctx.strokeStyle="#f5c451"; ctx.lineWidth=1.4; ctx.setLineDash([5,4]); ctx.beginPath();
+  for(let i=0;i<n;i++){ const v=ma[i]; if(v==null){started=false;continue;} const x=xAt(i),y=yP(v); started?ctx.lineTo(x,y):ctx.moveTo(x,y); started=true; } ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle="#8b949e"; ctx.textAlign="center"; ctx.textBaseline="top";
+  for(let k=0;k<7;k++){ const i=Math.round(k/6*(n-1)); ctx.fillText((dates[i]||"").slice(2),xAt(i),y1+8); }
+}
+
 function init(){
   if(!window.SCREENER_DATA_US && !window.SCREENER_DATA_KR){
     document.querySelector(".tablewrap").innerHTML=
@@ -547,8 +706,10 @@ function init(){
   document.getElementById("pagesize").addEventListener("change", e=>{ pageSize=parseInt(e.target.value); page=0; render(); });
   document.querySelectorAll("#marketToggle button").forEach(b=>{ b.onclick=()=>setMarket(b.dataset.m); });
   document.querySelectorAll("#viewToggle button").forEach(b=>{ b.onclick=()=>setViewMode(b.dataset.v); });
-  // star toggle via event delegation (rows are re-rendered as innerHTML)
+  // row clicks via event delegation (rows are re-rendered as innerHTML)
   document.getElementById("tbody").addEventListener("click", e=>{
+    const chart = e.target.closest(".chartlink");
+    if(chart){ openChart(chart.dataset.tkr); return; }
     const cell = e.target.closest(".star"); if(!cell) return;
     const tkr = cell.dataset.tkr;
     if(watch.has(tkr)) watch.delete(tkr); else watch.add(tkr);
@@ -556,6 +717,14 @@ function init(){
     if(watchOnly) applyFilters();
     else { cell.classList.toggle("on"); cell.textContent = watch.has(tkr) ? "★" : "☆"; }
   });
+  // deviation chart modal controls
+  document.getElementById("mClose").onclick=closeChart;
+  document.getElementById("modalBg").addEventListener("click", e=>{ if(e.target.id==="modalBg") closeChart(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeChart(); });
+  document.getElementById("mWin").addEventListener("input", e=>{
+    chartWin=parseInt(e.target.value); document.getElementById("mWinL").textContent=chartWin+"D"; drawChart();
+  });
+  window.addEventListener("resize", ()=>{ if(document.getElementById("modalBg").classList.contains("open")) drawChart(); });
   let saved="us"; try{ saved=localStorage.getItem("rs-market")||"us"; }catch(e){}
   if(!setMarket(saved)) setMarket(saved==="us"?"kr":"us");
   setViewMode("stocks");   // sets toggle active state + correct visibility
