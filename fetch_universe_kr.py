@@ -105,6 +105,9 @@ def main() -> None:
     print(f"FDR: KRX={len(marcap)}, KRX-DESC={len(desc)}", file=sys.stderr)
 
     df = marcap.merge(desc[["Code", "Sector", "Industry"]], on="Code", how="left")
+    # "KOSDAQ GLOBAL" is the premium KOSDAQ segment (알테오젠·에코프로비엠·주성엔지니어링
+    # 등 우량주) — fold it into KOSDAQ so it isn't dropped. KONEX stays excluded.
+    df["Market"] = df["Market"].replace({"KOSDAQ GLOBAL": "KOSDAQ"})
     df = df[df["Market"].isin(["KOSPI", "KOSDAQ"])]
     df = df[df["Name"].apply(is_common_stock)]
     df = df[df["Marcap"] >= MIN_MARKET_CAP]

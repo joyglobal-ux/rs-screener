@@ -387,6 +387,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "196170.KQ",
+    "krxCode": "196170",
+    "name": "알테오젠",
+    "sector": "바이오/연구개발",
+    "industry": "자연과학 및 공학 연구개발업",
+    "marketCap": 18594461021000,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "011200.KS",
     "krxCode": "011200",
     "name": "HMM",
@@ -477,6 +486,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "247540.KQ",
+    "krxCode": "247540",
+    "name": "에코프로비엠",
+    "sector": "기타",
+    "industry": "일차전지 및 이차전지 제조업",
+    "marketCap": 16073540306200,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "278470.KS",
     "krxCode": "278470",
     "name": "에이피알",
@@ -493,6 +511,15 @@
     "industry": "전기 통신업",
     "marketCap": 15121301100000,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "086520.KQ",
+    "krxCode": "086520",
+    "name": "에코프로",
+    "sector": "금융",
+    "industry": "기타 금융업",
+    "marketCap": 14772445337600,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "086280.KS",
@@ -556,6 +583,15 @@
     "industry": "기타 금융업",
     "marketCap": 11653200000000,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "036930.KQ",
+    "krxCode": "036930",
+    "name": "주성엔지니어링",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 11411115205500,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "323410.KS",
@@ -747,6 +783,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "058470.KQ",
+    "krxCode": "058470",
+    "name": "리노공업",
+    "sector": "전기전자",
+    "industry": "전자부품 제조업",
+    "marketCap": 7605942630000,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "001440.KS",
     "krxCode": "001440",
     "name": "대한전선",
@@ -781,6 +826,15 @@
     "industry": "자연과학 및 공학 연구개발업",
     "marketCap": 6930722625000,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "240810.KQ",
+    "krxCode": "240810",
+    "name": "원익IPS",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 6920830041000,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "267270.KS",
@@ -879,6 +933,15 @@
     "sector": "제약/바이오",
     "industry": "의료용품 및 기타 의약 관련제품 제조업",
     "marketCap": 6313595770200,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "039030.KQ",
+    "krxCode": "039030",
+    "name": "이오테크닉스",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 6209053200000,
     "market": "KOSDAQ"
   },
   {
@@ -1035,6 +1098,24 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "222800.KQ",
+    "krxCode": "222800",
+    "name": "심텍",
+    "sector": "전기전자",
+    "industry": "전자부품 제조업",
+    "marketCap": 4993942002300,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "141080.KQ",
+    "krxCode": "141080",
+    "name": "리가켐바이오",
+    "sector": "바이오/연구개발",
+    "industry": "자연과학 및 공학 연구개발업",
+    "marketCap": 4990217546400,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "440110.KQ",
     "krxCode": "440110",
     "name": "파두",
@@ -1080,6 +1161,15 @@
     "market": "KOSDAQ"
   },
   {
+    "ticker": "403870.KQ",
+    "krxCode": "403870",
+    "name": "HPSP",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 4526500000000,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "052690.KS",
     "krxCode": "052690",
     "name": "한전기술",
@@ -1105,6 +1195,15 @@
     "industry": "일반 목적용 기계 제조업",
     "marketCap": 4341090594960,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "319660.KQ",
+    "krxCode": "319660",
+    "name": "피에스케이",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 4339213757200,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "004020.KS",
@@ -1176,6 +1275,15 @@
     "sector": "기계/장비",
     "industry": "특수 목적용 기계 제조업",
     "marketCap": 4085930288600,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "095340.KQ",
+    "krxCode": "095340",
+    "name": "ISC",
+    "sector": "기계/장비",
+    "industry": "기계장비 및 관련 물품 도매업",
+    "marketCap": 4038039549000,
     "market": "KOSDAQ"
   },
   {
@@ -1386,6 +1494,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "064760.KQ",
+    "krxCode": "064760",
+    "name": "티씨케이",
+    "sector": "철강/금속",
+    "industry": "기타 비금속 광물제품 제조업",
+    "marketCap": 3102287940000,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "302440.KS",
     "krxCode": "302440",
     "name": "SK바이오사이언스",
@@ -1393,6 +1510,24 @@
     "industry": "기초 의약물질 제조업",
     "marketCap": 3087265360550,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "214150.KQ",
+    "krxCode": "214150",
+    "name": "클래시스",
+    "sector": "의료기기/헬스케어",
+    "industry": "의료용 기기 제조업",
+    "marketCap": 3056290624150,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "145020.KQ",
+    "krxCode": "145020",
+    "name": "휴젤",
+    "sector": "제약/바이오",
+    "industry": "기초 의약물질 제조업",
+    "marketCap": 3020640101500,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "005850.KS",
@@ -1413,6 +1548,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "214450.KQ",
+    "krxCode": "214450",
+    "name": "파마리서치",
+    "sector": "제약/바이오",
+    "industry": "의료용품 및 기타 의약 관련제품 제조업",
+    "marketCap": 2997413448000,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "004800.KS",
     "krxCode": "004800",
     "name": "효성",
@@ -1429,6 +1573,15 @@
     "industry": "기타 금융업",
     "marketCap": 2942642360560,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "131970.KQ",
+    "krxCode": "131970",
+    "name": "두산테스나",
+    "sector": "기타",
+    "industry": "그외 기타 전문, 과학 및 기술 서비스업",
+    "marketCap": 2941605623600,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "097950.KS",
@@ -1494,6 +1647,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "357780.KQ",
+    "krxCode": "357780",
+    "name": "솔브레인",
+    "sector": "화학/소재",
+    "industry": "기타 화학제품 제조업",
+    "marketCap": 2761390930000,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "375500.KS",
     "krxCode": "375500",
     "name": "DL이앤씨",
@@ -1530,6 +1692,15 @@
     "market": "KOSDAQ"
   },
   {
+    "ticker": "263750.KQ",
+    "krxCode": "263750",
+    "name": "펄어비스",
+    "sector": "소프트웨어/IT서비스",
+    "industry": "소프트웨어 개발 및 공급업",
+    "marketCap": 2637374447750,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "483650.KS",
     "krxCode": "483650",
     "name": "달바글로벌",
@@ -1537,6 +1708,15 @@
     "industry": "기타 화학제품 제조업",
     "marketCap": 2630993815000,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "237690.KQ",
+    "krxCode": "237690",
+    "name": "에스티팜",
+    "sector": "제약/바이오",
+    "industry": "의약품 제조업",
+    "marketCap": 2570129161600,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "026960.KS",
@@ -1854,6 +2034,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "041510.KQ",
+    "krxCode": "041510",
+    "name": "에스엠",
+    "sector": "미디어/엔터",
+    "industry": "오디오물 출판 및 원판 녹음업",
+    "marketCap": 2033048472000,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "161890.KS",
     "krxCode": "161890",
     "name": "한국콜마",
@@ -1906,6 +2095,15 @@
     "industry": "1차 비철금속 제조업",
     "marketCap": 1958897032200,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "035900.KQ",
+    "krxCode": "035900",
+    "name": "JYP Ent.",
+    "sector": "미디어/엔터",
+    "industry": "오디오물 출판 및 원판 녹음업",
+    "marketCap": 1950733810800,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "011210.KS",
@@ -1977,6 +2175,15 @@
     "sector": "기계/장비",
     "industry": "특수 목적용 기계 제조업",
     "marketCap": 1870941880800,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "140860.KQ",
+    "krxCode": "140860",
+    "name": "파크시스템스",
+    "sector": "정밀/광학",
+    "industry": "측정, 시험, 항해, 제어 및 기타 정밀기기 제조업; 광학기기 제외",
+    "marketCap": 1848651816000,
     "market": "KOSDAQ"
   },
   {
@@ -2196,6 +2403,15 @@
     "market": "KOSDAQ"
   },
   {
+    "ticker": "183300.KQ",
+    "krxCode": "183300",
+    "name": "코미코",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 1456127212800,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "006280.KS",
     "krxCode": "006280",
     "name": "녹십자",
@@ -2340,6 +2556,15 @@
     "market": "KOSDAQ"
   },
   {
+    "ticker": "166090.KQ",
+    "krxCode": "166090",
+    "name": "하나머티리얼즈",
+    "sector": "반도체",
+    "industry": "반도체 제조업",
+    "marketCap": 1340926297200,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "295310.KQ",
     "krxCode": "295310",
     "name": "에이치브이엠",
@@ -2475,6 +2700,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "195940.KQ",
+    "krxCode": "195940",
+    "name": "HK이노엔",
+    "sector": "제약/바이오",
+    "industry": "의약품 제조업",
+    "marketCap": 1182772949250,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "003530.KS",
     "krxCode": "003530",
     "name": "한화투자증권",
@@ -2500,6 +2734,15 @@
     "industry": "알코올음료 제조업",
     "marketCap": 1152295228730,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "003380.KQ",
+    "krxCode": "003380",
+    "name": "하림지주",
+    "sector": "금융",
+    "industry": "기타 금융업",
+    "marketCap": 1150297727670,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "127120.KQ",
@@ -2772,6 +3015,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "074600.KQ",
+    "krxCode": "074600",
+    "name": "원익QnC",
+    "sector": "기타",
+    "industry": "유리 및 유리제품 제조업",
+    "marketCap": 951625600000,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "100090.KS",
     "krxCode": "100090",
     "name": "SK오션플랜트",
@@ -2797,6 +3049,15 @@
     "industry": "무점포 소매업",
     "marketCap": 944400000000,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "137400.KQ",
+    "krxCode": "137400",
+    "name": "피엔티",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 944075510800,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "204270.KQ",
@@ -2833,6 +3094,15 @@
     "industry": "금융 지원 서비스업",
     "marketCap": 923901089090,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "213420.KQ",
+    "krxCode": "213420",
+    "name": "덕산네오룩스",
+    "sector": "전기전자",
+    "industry": "전자부품 제조업",
+    "marketCap": 919995181950,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "466100.KQ",
@@ -2878,6 +3148,24 @@
     "industry": "부동산 임대 및 공급업",
     "marketCap": 901592000000,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "056190.KQ",
+    "krxCode": "056190",
+    "name": "에스에프에이",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 897719000000,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "036830.KQ",
+    "krxCode": "036830",
+    "name": "솔브레인홀딩스",
+    "sector": "기타",
+    "industry": "회사 본부 및 경영 컨설팅 서비스업",
+    "marketCap": 897049168750,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "358570.KQ",
@@ -2961,6 +3249,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "086450.KQ",
+    "krxCode": "086450",
+    "name": "동국제약",
+    "sector": "제약/바이오",
+    "industry": "의약품 제조업",
+    "marketCap": 856664154800,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "075580.KS",
     "krxCode": "075580",
     "name": "세진중공업",
@@ -2977,6 +3274,15 @@
     "industry": "기타 금융업",
     "marketCap": 838019740400,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "035760.KQ",
+    "krxCode": "035760",
+    "name": "CJ ENM",
+    "sector": "기타",
+    "industry": "텔레비전 방송업",
+    "marketCap": 835500767400,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "122870.KQ",
@@ -3039,6 +3345,15 @@
     "sector": "제약/바이오",
     "industry": "의료용품 및 기타 의약 관련제품 제조업",
     "marketCap": 801626344500,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "222080.KQ",
+    "krxCode": "222080",
+    "name": "씨아이에스",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 801135483200,
     "market": "KOSDAQ"
   },
   {
@@ -3105,6 +3420,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "293490.KQ",
+    "krxCode": "293490",
+    "name": "카카오게임즈",
+    "sector": "소프트웨어/IT서비스",
+    "industry": "소프트웨어 개발 및 공급업",
+    "marketCap": 782043994810,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "006120.KS",
     "krxCode": "006120",
     "name": "SK디스커버리",
@@ -3139,6 +3463,15 @@
     "industry": "전동기, 발전기 및 전기 변환 · 공급 · 제어 장치 제조업",
     "marketCap": 769751500000,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "046890.KQ",
+    "krxCode": "046890",
+    "name": "서울반도체",
+    "sector": "반도체",
+    "industry": "반도체 제조업",
+    "marketCap": 769631280000,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "456160.KQ",
@@ -3255,6 +3588,15 @@
     "sector": "기타",
     "industry": "일차전지 및 이차전지 제조업",
     "marketCap": 746045014600,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "253450.KQ",
+    "krxCode": "253450",
+    "name": "스튜디오드래곤",
+    "sector": "미디어/엔터",
+    "industry": "영화, 비디오물, 방송프로그램 제작 및 배급업",
+    "marketCap": 745450750400,
     "market": "KOSDAQ"
   },
   {
@@ -3735,6 +4077,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "348210.KQ",
+    "krxCode": "348210",
+    "name": "넥스틴",
+    "sector": "기계/장비",
+    "industry": "특수 목적용 기계 제조업",
+    "marketCap": 612904792500,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "170920.KQ",
     "krxCode": "170920",
     "name": "엘티씨",
@@ -3822,6 +4173,15 @@
     "sector": "기계/장비",
     "industry": "특수 목적용 기계 제조업",
     "marketCap": 590079922950,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "009520.KQ",
+    "krxCode": "009520",
+    "name": "포스코엠텍",
+    "sector": "철강/금속",
+    "industry": "1차 철강 제조업",
+    "marketCap": 588411393390,
     "market": "KOSDAQ"
   },
   {
@@ -3957,6 +4317,15 @@
     "sector": "기타",
     "industry": "자료처리, 호스팅, 포털 및 기타 인터넷 정보매개 서비스업",
     "marketCap": 558272000000,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "272290.KQ",
+    "krxCode": "272290",
+    "name": "이녹스첨단소재",
+    "sector": "전기전자",
+    "industry": "전자부품 제조업",
+    "marketCap": 557253376550,
     "market": "KOSDAQ"
   },
   {
@@ -4120,6 +4489,15 @@
     "industry": "기초 화학물질 제조업",
     "marketCap": 524500000000,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "067160.KQ",
+    "krxCode": "067160",
+    "name": "SOOP",
+    "sector": "소프트웨어/IT서비스",
+    "industry": "소프트웨어 개발 및 공급업",
+    "marketCap": 523011898500,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "278280.KQ",
@@ -4299,6 +4677,15 @@
     "sector": "제약/바이오",
     "industry": "의료용품 및 기타 의약 관련제품 제조업",
     "marketCap": 481177600000,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "030520.KQ",
+    "krxCode": "030520",
+    "name": "한글과컴퓨터",
+    "sector": "소프트웨어/IT서비스",
+    "industry": "소프트웨어 개발 및 공급업",
+    "marketCap": 480935108160,
     "market": "KOSDAQ"
   },
   {
@@ -4671,6 +5058,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "393890.KQ",
+    "krxCode": "393890",
+    "name": "더블유씨피",
+    "sector": "기타",
+    "industry": "일차전지 및 이차전지 제조업",
+    "marketCap": 426423614400,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "001200.KS",
     "krxCode": "001200",
     "name": "유진투자증권",
@@ -4842,6 +5238,15 @@
     "market": "KOSDAQ"
   },
   {
+    "ticker": "215200.KQ",
+    "krxCode": "215200",
+    "name": "메가스터디교육",
+    "sector": "기타",
+    "industry": "일반 교습 학원",
+    "marketCap": 403206902400,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "101930.KQ",
     "krxCode": "101930",
     "name": "인화정공",
@@ -4965,6 +5370,15 @@
     "sector": "전기전자",
     "industry": "전자부품 제조업",
     "marketCap": 389549938850,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "025900.KQ",
+    "krxCode": "025900",
+    "name": "동화기업",
+    "sector": "기타",
+    "industry": "나무제품 제조업",
+    "marketCap": 388279948800,
     "market": "KOSDAQ"
   },
   {
@@ -5571,6 +5985,15 @@
     "market": "KOSPI"
   },
   {
+    "ticker": "069080.KQ",
+    "krxCode": "069080",
+    "name": "웹젠",
+    "sector": "소프트웨어/IT서비스",
+    "industry": "소프트웨어 개발 및 공급업",
+    "marketCap": 330103689500,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "001940.KS",
     "krxCode": "001940",
     "name": "KISCO홀딩스",
@@ -5676,6 +6099,15 @@
     "sector": "조선",
     "industry": "선박 및 보트 건조업",
     "marketCap": 314989208800,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "091700.KQ",
+    "krxCode": "091700",
+    "name": "파트론",
+    "sector": "전기전자",
+    "industry": "전자부품 제조업",
+    "marketCap": 314500000000,
     "market": "KOSDAQ"
   },
   {
@@ -5829,6 +6261,15 @@
     "sector": "기타",
     "industry": "도축, 육류 가공 및 저장 처리업",
     "marketCap": 305352893250,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "078340.KQ",
+    "krxCode": "078340",
+    "name": "컴투스",
+    "sector": "소프트웨어/IT서비스",
+    "industry": "소프트웨어 개발 및 공급업",
+    "marketCap": 305305653250,
     "market": "KOSDAQ"
   },
   {
@@ -6192,6 +6633,15 @@
     "market": "KOSDAQ"
   },
   {
+    "ticker": "200130.KQ",
+    "krxCode": "200130",
+    "name": "콜마비앤에이치",
+    "sector": "제약/바이오",
+    "industry": "기초 의약물질 제조업",
+    "marketCap": 276212089620,
+    "market": "KOSDAQ"
+  },
+  {
     "ticker": "035810.KQ",
     "krxCode": "035810",
     "name": "이지홀딩스",
@@ -6262,6 +6712,15 @@
     "industry": "연료용 가스 제조 및 배관공급업",
     "marketCap": 271755000000,
     "market": "KOSPI"
+  },
+  {
+    "ticker": "215000.KQ",
+    "krxCode": "215000",
+    "name": "골프존",
+    "sector": "소프트웨어/IT서비스",
+    "industry": "소프트웨어 개발 및 공급업",
+    "marketCap": 271411698750,
+    "market": "KOSDAQ"
   },
   {
     "ticker": "151860.KQ",
@@ -6900,6 +7359,15 @@
     "sector": "화학/소재",
     "industry": "기초 화학물질 제조업",
     "marketCap": 240020000000,
+    "market": "KOSDAQ"
+  },
+  {
+    "ticker": "084850.KQ",
+    "krxCode": "084850",
+    "name": "아이티엠반도체",
+    "sector": "전기전자",
+    "industry": "전자부품 제조업",
+    "marketCap": 239985441720,
     "market": "KOSDAQ"
   },
   {
