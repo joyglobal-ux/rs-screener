@@ -73,9 +73,9 @@
     "ticker": "SPCX",
     "nasdaqSymbol": "SPCX",
     "name": "Space Exploration Technologies Corp. Class A",
-    "sector": "Unknown",
-    "industry": "Unknown",
-    "marketCap": 2104560499916.0,
+    "sector": "Technology",
+    "industry": "Computer Software: Programming Data Processing",
+    "marketCap": 2106972945667.0,
     "country": "United States",
     "ipoYear": "2026"
   },
@@ -428,6 +428,16 @@
     "marketCap": 337602042231.0,
     "country": "United States",
     "ipoYear": ""
+  },
+  {
+    "ticker": "KLAC",
+    "nasdaqSymbol": "KLAC",
+    "name": "KLA Corporation",
+    "sector": "Technology",
+    "industry": "Electronic Components",
+    "marketCap": 332499291953.0,
+    "country": "United States",
+    "ipoYear": "1980"
   },
   {
     "ticker": "HD",
@@ -3343,8 +3353,8 @@
     "ticker": "FITB",
     "nasdaqSymbol": "FITB",
     "name": "Fifth Third Bancorp",
-    "sector": "Unknown",
-    "industry": "Unknown",
+    "sector": "Finance",
+    "industry": "Major Banks",
     "marketCap": 49602431022.0,
     "country": "United States",
     "ipoYear": ""
@@ -4438,16 +4448,6 @@
     "marketCap": 33357981349.0,
     "country": "United States",
     "ipoYear": "2013"
-  },
-  {
-    "ticker": "KLAC",
-    "nasdaqSymbol": "KLAC",
-    "name": "KLA Corporation",
-    "sector": "Technology",
-    "industry": "Electronic Components",
-    "marketCap": 33249929195.0,
-    "country": "United States",
-    "ipoYear": "1980"
   },
   {
     "ticker": "STRC",
@@ -9965,7 +9965,7 @@
     "name": "GameStop Corporation",
     "sector": "Consumer Discretionary",
     "industry": "Electronics Distribution",
-    "marketCap": 9768008012.0,
+    "marketCap": 9768008665.0,
     "country": "United States",
     "ipoYear": "2002"
   },
@@ -14340,6 +14340,16 @@
     "ipoYear": "2025"
   },
   {
+    "ticker": "NAVN",
+    "nasdaqSymbol": "NAVN",
+    "name": "Navan Inc. Class A",
+    "sector": "Technology",
+    "industry": "Computer Software: Prepackaged Software",
+    "marketCap": 5068822052.0,
+    "country": "United States",
+    "ipoYear": "2025"
+  },
+  {
     "ticker": "GHC",
     "nasdaqSymbol": "GHC",
     "name": "Graham Holdings Company",
@@ -14388,16 +14398,6 @@
     "marketCap": 5036275155.0,
     "country": "Canada",
     "ipoYear": "2014"
-  },
-  {
-    "ticker": "NAVN",
-    "nasdaqSymbol": "NAVN",
-    "name": "Navan Inc. Class A",
-    "sector": "Technology",
-    "industry": "Computer Software: Prepackaged Software",
-    "marketCap": 5033372700.0,
-    "country": "United States",
-    "ipoYear": "2025"
   },
   {
     "ticker": "OLLI",
@@ -19075,7 +19075,7 @@
     "name": "RH",
     "sector": "Consumer Discretionary",
     "industry": "Other Specialty Stores",
-    "marketCap": 2892573688.0,
+    "marketCap": 2892604296.0,
     "country": "United States",
     "ipoYear": "2012"
   },
@@ -20010,16 +20010,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "FTAIN",
-    "nasdaqSymbol": "FTAIN",
-    "name": "FTAI Aviation Ltd. 8.25% Fixed - Rate Reset Series C Cumulative Perpetual Redeemable Preferred Shares",
-    "sector": "Industrials",
-    "industry": "Misc Corporate Leasing Services",
-    "marketCap": 2563558729.0,
-    "country": "United States",
-    "ipoYear": ""
-  },
-  {
     "ticker": "DNOW",
     "nasdaqSymbol": "DNOW",
     "name": "DNOW Inc.",
@@ -20940,6 +20930,16 @@
     "ipoYear": ""
   },
   {
+    "ticker": "MH",
+    "nasdaqSymbol": "MH",
+    "name": "McGraw Hill Inc.",
+    "sector": "Consumer Discretionary",
+    "industry": "Publishing",
+    "marketCap": 2249407736.0,
+    "country": "",
+    "ipoYear": "2025"
+  },
+  {
     "ticker": "PMTU",
     "nasdaqSymbol": "PMTU",
     "name": "PennyMac Mortgage Investment Trust 8.50% Senior Notes due 2028",
@@ -20948,16 +20948,6 @@
     "marketCap": 2247204869.0,
     "country": "United States",
     "ipoYear": "2023"
-  },
-  {
-    "ticker": "MH",
-    "nasdaqSymbol": "MH",
-    "name": "McGraw Hill Inc.",
-    "sector": "Consumer Discretionary",
-    "industry": "Publishing",
-    "marketCap": 2246177863.0,
-    "country": "",
-    "ipoYear": "2025"
   },
   {
     "ticker": "NNNN",
@@ -21040,6 +21030,16 @@
     "ipoYear": "2026"
   },
   {
+    "ticker": "DRVN",
+    "nasdaqSymbol": "DRVN",
+    "name": "Driven Brands Holdings Inc.",
+    "sector": "Consumer Discretionary",
+    "industry": "Automotive Aftermarket",
+    "marketCap": 2215358597.0,
+    "country": "United States",
+    "ipoYear": "2021"
+  },
+  {
     "ticker": "WLYB",
     "nasdaqSymbol": "WLYB",
     "name": "John Wiley & Sons Inc.",
@@ -21048,16 +21048,6 @@
     "marketCap": 2215100507.0,
     "country": "United States",
     "ipoYear": ""
-  },
-  {
-    "ticker": "DRVN",
-    "nasdaqSymbol": "DRVN",
-    "name": "Driven Brands Holdings Inc.",
-    "sector": "Consumer Discretionary",
-    "industry": "Automotive Aftermarket",
-    "marketCap": 2215049398.0,
-    "country": "United States",
-    "ipoYear": "2021"
   },
   {
     "ticker": "MNR",
@@ -22275,7 +22265,7 @@
     "name": "Photronics Inc.",
     "sector": "Technology",
     "industry": "Semiconductors",
-    "marketCap": 1873952001.0,
+    "marketCap": 1873866322.0,
     "country": "United States",
     "ipoYear": "1987"
   },
@@ -23380,14 +23370,14 @@
     "ipoYear": ""
   },
   {
-    "ticker": "RZB",
-    "nasdaqSymbol": "RZB",
-    "name": "Reinsurance Group of America Incorporated 5.75% Fixed-To-Floating Rate Subordinated Debentures due 2056",
-    "sector": "Finance",
-    "industry": "Life Insurance",
-    "marketCap": 1660103550.0,
+    "ticker": "SNDA",
+    "nasdaqSymbol": "SNDA",
+    "name": "Sonida Senior Living Inc.",
+    "sector": "Health Care",
+    "industry": "Hospital/Nursing Management",
+    "marketCap": 1660223970.0,
     "country": "United States",
-    "ipoYear": "2016"
+    "ipoYear": ""
   },
   {
     "ticker": "GAB",
@@ -23398,16 +23388,6 @@
     "marketCap": 1660067253.0,
     "country": "United States",
     "ipoYear": "1986"
-  },
-  {
-    "ticker": "SNDA",
-    "nasdaqSymbol": "SNDA",
-    "name": "Sonida Senior Living Inc.",
-    "sector": "Health Care",
-    "industry": "Hospital/Nursing Management",
-    "marketCap": 1659486308.0,
-    "country": "United States",
-    "ipoYear": ""
   },
   {
     "ticker": "BDJ",
@@ -24495,7 +24475,7 @@
     "name": "Lightwave Logic Inc.",
     "sector": "Industrials",
     "industry": "Containers/Packaging",
-    "marketCap": 1477623671.0,
+    "marketCap": 1478057235.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -26365,7 +26345,7 @@
     "name": "Seneca Foods Corp. Class A",
     "sector": "Consumer Staples",
     "industry": "Packaged Foods",
-    "marketCap": 1186697925.0,
+    "marketCap": 1187332063.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -26610,22 +26590,22 @@
     "ipoYear": "2026"
   },
   {
+    "ticker": "SENEB",
+    "nasdaqSymbol": "SENEB",
+    "name": "Seneca Foods Corp. Class B",
+    "sector": "Consumer Staples",
+    "industry": "Packaged Foods",
+    "marketCap": 1145287630.0,
+    "country": "United States",
+    "ipoYear": ""
+  },
+  {
     "ticker": "FCEL",
     "nasdaqSymbol": "FCEL",
     "name": "FuelCell Energy Inc.",
     "sector": "Energy",
     "industry": "Industrial Machinery/Components",
     "marketCap": 1145282451.0,
-    "country": "United States",
-    "ipoYear": ""
-  },
-  {
-    "ticker": "SENEB",
-    "nasdaqSymbol": "SENEB",
-    "name": "Seneca Foods Corp. Class B",
-    "sector": "Consumer Staples",
-    "industry": "Packaged Foods",
-    "marketCap": 1144675948.0,
     "country": "United States",
     "ipoYear": ""
   },
