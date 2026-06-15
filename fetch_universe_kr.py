@@ -11,17 +11,41 @@ from __future__ import annotations
 import json
 import re
 import sys
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import FinanceDataReader as fdr
 import pandas as pd
+import requests
 
 MIN_MARKET_CAP = 100_000_000_000  # 1,000억 원 (KRW)
-OUT = Path(__file__).parent / "universe-kr.json"
+HERE = Path(__file__).parent
+OUT = HERE / "universe-kr.json"
+WICS_MAP = HERE / "sector_map_kr.json"  # cached {6-digit code: WICS sector name}
+WICS_MAX_AGE_DAYS = 7  # re-scrape Naver only when the cache is older than this
 
 # Preferred shares end with 우 / 우B / 1우B / 2우B etc. — exclude them so each
 # company appears once. Also drop SPACs (스팩) which trade like cash boxes.
 PREFERRED_RE = re.compile(r"우$|우B$|[0-9]+우B?$")
+
+
+# When a stock isn't in Naver's WICS map and we fall back to the KSIC classifier,
+# fold its coarse label into the WICS vocabulary so we don't get near-duplicate
+# sectors (e.g. "기계/장비" vs WICS "기계").
+KSIC_TO_WICS = {
+    "기계/장비": "기계",
+    "제약/바이오": "제약",
+    "바이오/연구개발": "생물공학",
+    "소프트웨어/IT서비스": "IT서비스",
+    "증권/투자": "증권",
+    "의료기기/헬스케어": "건강관리장비와용품",
+    "유통/도소매": "유통",
+    "철강/금속": "철강",
+    "반도체": "반도체와반도체장비",
+    "디스플레이": "디스플레이장비및부품",
+    "전기전자": "전자장비와기기",
+}
 
 
 def classify_sector(industry: str) -> str:
@@ -88,6 +112,72 @@ def to_yahoo(code: str, market: str) -> str:
     return f"{code}.{'KS' if market == 'KOSPI' else 'KQ'}"
 
 
+_UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+_GROUP_RE = re.compile(r"sise_group_detail\.naver\?type=upjong&no=(\d+)\">([^<]+)<")
+_CODE_RE = re.compile(r"/item/main\.naver\?code=(\d{6})")
+
+
+def scrape_wics_map() -> dict[str, str]:
+    """Scrape Naver's 업종(WICS) groups → {6-digit code: sector name}.
+
+    Naver's 업종 = WISE Industry Classification (WICS), which groups by investment
+    theme — e.g. "반도체와반도체장비" holds chipmakers AND equipment makers (주성·
+    피에스케이·테스), unlike KSIC which buries equipment under 특수목적용기계. ~79
+    group pages cover every listed name, names included.
+    """
+    base = "https://finance.naver.com/sise/sise_group.naver?type=upjong"
+    listing = requests.get(base, headers=_UA, timeout=20).content.decode("euc-kr", "replace")
+    groups = _GROUP_RE.findall(listing)
+    if not groups:
+        raise RuntimeError("Naver 업종 목록 파싱 실패")
+    out: dict[str, str] = {}
+    for no, name in groups:
+        name = name.strip()
+        url = f"https://finance.naver.com/sise/sise_group_detail.naver?type=upjong&no={no}"
+        try:
+            html = requests.get(url, headers=_UA, timeout=20).content.decode("euc-kr", "replace")
+        except Exception as e:  # noqa: BLE001
+            print(f"  WICS group {no} {name} 실패: {e}", file=sys.stderr)
+            continue
+        for code in _CODE_RE.findall(html):
+            out.setdefault(code, name)   # first (= its own group) wins
+        time.sleep(0.3)
+    if len(out) < 500:
+        raise RuntimeError(f"WICS 맵이 너무 작음({len(out)}) — 스크랩 불완전")
+    return out
+
+
+def load_or_refresh_wics_map() -> dict[str, str]:
+    """Return the cached WICS map, re-scraping only when missing/stale. Any
+    failure falls back to the existing cache (or {}), so the daily run never
+    breaks on a Naver hiccup — codes missing from the map use the KSIC classifier.
+    """
+    cached, fresh = {}, False
+    if WICS_MAP.exists():
+        try:
+            blob = json.loads(WICS_MAP.read_text(encoding="utf-8"))
+            cached = blob.get("map", {})
+            ts = datetime.fromisoformat(blob.get("scrapedAt", "").replace("Z", "+00:00"))
+            fresh = (datetime.now(timezone.utc) - ts).days < WICS_MAX_AGE_DAYS
+        except Exception:  # noqa: BLE001
+            cached, fresh = cached, False
+    if fresh and cached:
+        print(f"WICS 맵 캐시 사용 ({len(cached)}종목)", file=sys.stderr)
+        return cached
+    try:
+        m = scrape_wics_map()
+        WICS_MAP.write_text(
+            json.dumps({"scrapedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                        "map": m}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        print(f"WICS 맵 재스크랩 완료 ({len(m)}종목) → {WICS_MAP.name}", file=sys.stderr)
+        return m
+    except Exception as e:  # noqa: BLE001
+        print(f"WICS 스크랩 실패({e}) — 캐시 {len(cached)}종목으로 폴백", file=sys.stderr)
+        return cached
+
+
 def is_common_stock(name: str) -> bool:
     n = (name or "").strip()
     if not n:
@@ -113,19 +203,30 @@ def main() -> None:
     df = df[df["Marcap"] >= MIN_MARKET_CAP]
     df = df.sort_values("Marcap", ascending=False)
 
+    wics = load_or_refresh_wics_map()
     out = []
+    wics_hits = 0
     for _, row in df.iterrows():
         industry = (row["Industry"] if pd.notna(row["Industry"]) else "") or ""
         industry = industry.strip()
+        # WICS (Naver) is the investment-theme taxonomy; KSIC classifier is the
+        # fallback for codes Naver didn't list (new/edge names).
+        sector = wics.get(row["Code"])
+        if sector:
+            wics_hits += 1
+        else:
+            sector = classify_sector(industry)
+            sector = KSIC_TO_WICS.get(sector, sector)
         out.append({
             "ticker": to_yahoo(row["Code"], row["Market"]),
             "krxCode": row["Code"],
             "name": row["Name"],
-            "sector": classify_sector(industry),
+            "sector": sector,
             "industry": industry or "기타",
             "marketCap": int(row["Marcap"]),
             "market": row["Market"],  # KOSPI | KOSDAQ
         })
+    print(f"섹터: WICS {wics_hits} / KSIC폴백 {len(out)-wics_hits}", file=sys.stderr)
 
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     print(
