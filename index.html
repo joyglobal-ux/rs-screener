@@ -203,8 +203,6 @@
   </div>
 </div>
 
-<script src="data-us.js"></script>
-<script src="data-kr.js"></script>
 <script>
 const PERIODS = ["1W","1M","3M","6M","1Y","YTD"];
 const PLABEL = {"1W":"1주","1M":"1개월","3M":"3개월","6M":"6개월","1Y":"1년","YTD":"YTD"};
@@ -612,7 +610,7 @@ function loadSeries(m){
     const have=window["SCREENER_SERIES_"+m.toUpperCase()];
     if(have){ resolve(have); return; }
     const s=document.createElement("script");
-    s.src="series-"+m+".js";
+    s.src="series-"+m+".js?v="+new Date().toISOString().slice(0,10);  // daily cache-bust
     s.onload=()=>resolve(window["SCREENER_SERIES_"+m.toUpperCase()]);
     s.onerror=()=>reject(new Error("series load failed"));
     document.head.appendChild(s);
@@ -729,7 +727,20 @@ function init(){
   if(!setMarket(saved)) setMarket(saved==="us"?"kr":"us");
   setViewMode("stocks");   // sets toggle active state + correct visibility
 }
-init();
+
+// Load the data files with a per-minute cache-bust so a reload always shows the
+// latest daily numbers — GitHub Pages caches assets ~10min, which otherwise made
+// returning visitors see stale data after a refresh. init() runs once both load.
+(function bootstrap(){
+  const v = "?v=" + Math.floor(Date.now()/60000);
+  let pending = 2;
+  const done = () => { if(--pending === 0) init(); };
+  ["data-us.js","data-kr.js"].forEach(f=>{
+    const s=document.createElement("script");
+    s.src=f+v; s.onload=done; s.onerror=done;   // init handles a missing market
+    document.head.appendChild(s);
+  });
+})();
 </script>
 </body>
 </html>
