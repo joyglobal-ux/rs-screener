@@ -21,6 +21,8 @@
   h1{font-size:18px;margin:0;font-weight:650;letter-spacing:-.2px}
   .sub{color:var(--muted);font-size:12px}
   .author{color:var(--muted);font-size:12px;font-weight:600}
+  .backlink{display:inline-block;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:10px;text-decoration:none;transition:color .15s}
+  .backlink:hover{color:var(--accent)}
   .market-toggle{margin-left:auto;display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
   .market-toggle button{background:var(--panel);color:var(--muted);border:none;padding:6px 14px;font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:.3px}
   .market-toggle button:hover{color:var(--text)}
@@ -127,6 +129,7 @@
 </head>
 <body>
 <div class="wrap">
+  <a class="backlink" href="/">← Polaris 허브</a>
   <header>
     <h1>Relative-Strength Screener</h1>
     <span class="sub" id="sub">기간별 주가상승률 + 종합 RS점수</span>
