@@ -88,8 +88,9 @@
   .gchip.active{background:#3a2f12;border-color:#f5c451;color:#f5d98a}
   .gchip .gcnt{color:var(--muted);font-weight:600;font-size:11px}
   .gchip.active .gcnt{color:#cdb36a}
-  .gchip .gx{margin-left:1px;opacity:.5;font-size:13px;line-height:1}
+  .gchip .gx{margin-left:1px;opacity:.55;font-size:13px;line-height:1}
   .gchip .gx:hover{opacity:1;color:var(--neg)}
+  .gchip .gedit:hover{color:var(--accent)}
   .gchip.add{border-style:dashed;color:var(--muted)}
   .gfilter{display:inline-flex;align-items:center;gap:6px;margin-left:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
   .gfilter input{margin:0;cursor:pointer}
@@ -647,18 +648,20 @@ function renderGroups(){
   let html=`<div class="gchip ${activeGroup==="all"?"active":""}" data-g="all">전체 <span class="gcnt">${union.size}</span></div>`;
   for(const g of groups){
     const on=g.id===activeGroup;
-    html+=`<div class="gchip ${on?"active":""}" data-g="${g.id}" title="더블클릭: 이름변경">`+
+    html+=`<div class="gchip ${on?"active":""}" data-g="${g.id}" title="클릭: 선택 · 더블클릭: 이름변경">`+
           `${esc(g.name)} <span class="gcnt">${g.t.length}</span>`+
-          (on?`<span class="gx" data-del="${g.id}" title="그룹 삭제">✕</span>`:"")+`</div>`;
+          (on?`<span class="gx gedit" data-edit="${g.id}" title="이름 변경">✎</span>`+
+              `<span class="gx" data-del="${g.id}" title="그룹 삭제">✕</span>`:"")+`</div>`;
   }
   html+=`<div class="gchip add" id="gAdd">+ 새 그룹</div>`;
   html+=`<label class="gfilter"><input type="checkbox" id="gFilter" ${groupFilter?"checked":""}> 이 그룹만 보기</label>`;
   el.innerHTML=html;
   el.querySelectorAll(".gchip[data-g]").forEach(c=>{
-    c.onclick=e=>{ if(e.target.dataset.del) return; activeGroup=c.dataset.g; saveGroups(); refreshView(); };
+    c.onclick=e=>{ if(e.target.dataset.del||e.target.dataset.edit) return; activeGroup=c.dataset.g; saveGroups(); refreshView(); };
     c.ondblclick=()=>{ if(c.dataset.g!=="all") renameGroup(c.dataset.g); };
   });
-  el.querySelectorAll(".gx").forEach(x=>x.onclick=e=>{ e.stopPropagation(); deleteGroup(x.dataset.del); });
+  el.querySelectorAll(".gedit").forEach(x=>x.onclick=e=>{ e.stopPropagation(); renameGroup(x.dataset.edit); });
+  el.querySelectorAll(".gx:not(.gedit)").forEach(x=>x.onclick=e=>{ e.stopPropagation(); deleteGroup(x.dataset.del); });
   document.getElementById("gAdd").onclick=addGroup;
   document.getElementById("gFilter").onchange=e=>{ groupFilter=e.target.checked; applyFilters(); };
 }
