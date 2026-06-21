@@ -80,6 +80,19 @@
     color:var(--text);cursor:pointer;user-select:none;font-weight:600}
   .watch-label input{margin:0;cursor:pointer}
   .watch-label .cnt{color:var(--muted);font-weight:600}
+  /* watchlist groups */
+  .group-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .gchip{display:inline-flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--border);
+    color:var(--muted);border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:600;cursor:pointer;user-select:none}
+  .gchip:hover{border-color:var(--accent);color:var(--text)}
+  .gchip.active{background:#3a2f12;border-color:#f5c451;color:#f5d98a}
+  .gchip .gcnt{color:var(--muted);font-weight:600;font-size:11px}
+  .gchip.active .gcnt{color:#cdb36a}
+  .gchip .gx{margin-left:1px;opacity:.5;font-size:13px;line-height:1}
+  .gchip .gx:hover{opacity:1;color:var(--neg)}
+  .gchip.add{border-style:dashed;color:var(--muted)}
+  .gfilter{display:inline-flex;align-items:center;gap:6px;margin-left:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+  .gfilter input{margin:0;cursor:pointer}
   .sorthint{color:var(--muted);font-size:11.5px;margin:-4px 0 14px}
   .sorthint b{color:#9fc1ff;font-weight:600}
   .view-toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px}
@@ -150,7 +163,6 @@
     <input id="search" type="text" placeholder="티커 / 종목명 검색…" autocomplete="off">
     <select id="sector"><option value="">전체 섹터</option></select>
     <select id="mcap"></select>
-    <label class="watch-label"><input type="checkbox" id="watchonly"> ⭐ 관심종목만 <span class="cnt" id="watchcnt"></span></label>
     <span class="spacer"></span>
     <select id="pagesize">
       <option value="50">50개씩</option>
@@ -160,6 +172,7 @@
     </select>
   </div>
 
+  <div class="group-bar" id="groupBar"></div>
   <div class="tabs" id="tabs"></div>
   <div class="sorthint" id="sorthint"></div>
 
@@ -236,7 +249,9 @@ let market="us", page=0, pageSize=100;
 // Sort state: "composite" = avg percentile of `picks` (multi-metric strength);
 // "column" = single direct-value sort on a non-metric column (price, name…).
 let sortMode="composite", picks=["score"], compDir="desc", colKey="score", colDir="desc";
-let watch=new Set(), watchOnly=false;
+// Named watchlist groups, per market. groups=[{id,name,t:[tickers]}]; activeGroup
+// = a group id (the star-edit target) or "all" (read-only union view).
+let groups=[], activeGroup="all", groupFilter=false;
 let viewMode="stocks", secSortKey="medScore", secSortDir="desc";
 const SECTOR_COLS=[
   {key:"sector",  label:"섹터",      align:"l"},
@@ -359,8 +374,9 @@ function applyFilters(){
   const q=document.getElementById("search").value.trim().toLowerCase();
   const sec=document.getElementById("sector").value;
   const minCap=parseFloat(document.getElementById("mcap").value)||0;
+  const activeMembers=activeTickerSet();
   view = rows.filter(r=>{
-    if(watchOnly && !watch.has(r.ticker)) return false;
+    if(groupFilter && !activeMembers.has(r.ticker)) return false;
     if(r.marketCap<minCap) return false;
     if(sec && r.sector!==sec) return false;
     if(q && !(r.ticker.toLowerCase().includes(q) || r.name.toLowerCase().includes(q))) return false;
@@ -372,23 +388,24 @@ function applyFilters(){
 }
 
 function render(){
-  renderTabs(); renderHead(); renderHint();
+  renderTabs(); renderHead(); renderHint(); renderGroups();
   const tb=document.getElementById("tbody");
   const empty=document.getElementById("empty");
   if(view.length===0){
     tb.innerHTML="";
-    empty.textContent = watchOnly && watch.size===0
-      ? "관심종목이 없습니다. 표의 ☆를 눌러 추가하세요."
+    empty.textContent = groupFilter && activeTickerSet().size===0
+      ? "이 그룹에 종목이 없습니다. 표의 ☆를 눌러 추가하세요."
       : "조건에 맞는 종목이 없습니다.";
     empty.style.display="block"; renderPager(); return;
   }
   empty.style.display="none";
   const start=page*pageSize, slice=view.slice(start,start+pageSize);
+  const gtitle = activeGroup==="all" ? "그룹에 포함됨(전체)" : ("'"+(activeG()?activeG().name:"")+"' 그룹 토글");
   let html="";
   slice.forEach((r,i)=>{
     const rank=start+i+1;
-    const on = watch.has(r.ticker);
-    let cells=`<td class="star${on?" on":""}" data-tkr="${esc(r.ticker)}" title="관심종목">${on?"★":"☆"}</td>`;
+    const on = inActive(r.ticker);
+    let cells=`<td class="star${on?" on":""}" data-tkr="${esc(r.ticker)}" title="${esc(gtitle)}">${on?"★":"☆"}</td>`;
     cells+=`<td class="rank num">${rank}</td>`;
     cells+=`<td class="l"><span class="tkr chartlink" data-tkr="${esc(r.ticker)}" title="이격도 차트 보기">${r.ticker.replace(/\.(KS|KQ)$/,'')}</span></td>`;
     cells+=`<td class="l name" title="${esc(r.name)}">${esc(r.name)}</td>`;
@@ -559,20 +576,91 @@ function renderSectors(){
 function setViewMode(v){
   viewMode=v;
   document.querySelectorAll("#viewToggle button").forEach(b=>b.classList.toggle("active", b.dataset.v===v));
-  ["controls","tabs","sorthint","tablewrap","pager"].forEach(id=>document.getElementById(id).style.display = v==="stocks"?"":"none");
+  ["controls","groupBar","tabs","sorthint","tablewrap","pager"].forEach(id=>document.getElementById(id).style.display = v==="stocks"?"":"none");
   ["sectorhint","sectorwrap"].forEach(id=>document.getElementById(id).style.display = v==="sectors"?"":"none");
   if(v==="sectors") renderSectors(); else render();
 }
 function refreshView(){ if(viewMode==="sectors") renderSectors(); else applyFilters(); }
 
-function loadWatch(m){
-  try{ return new Set(JSON.parse(localStorage.getItem("rs-watch-"+m)||"[]")); }catch(e){ return new Set(); }
+function newGid(){ return "g"+Math.random().toString(36).slice(2,8); }
+function loadGroups(m){
+  let gs=null;
+  try{ gs=JSON.parse(localStorage.getItem("rs-groups-"+m)); }catch(e){}
+  if(!Array.isArray(gs)){
+    // migrate a legacy single watchlist into one default group
+    let legacy=[]; try{ legacy=JSON.parse(localStorage.getItem("rs-watch-"+m)||"[]"); }catch(e){}
+    gs = legacy.length ? [{id:newGid(), name:"관심종목", t:legacy}] : [];
+  }
+  groups = gs;
+  let act="all"; try{ act=localStorage.getItem("rs-active-"+m)||""; }catch(e){}
+  // default to the first group (so starring works immediately); "all" only if asked
+  activeGroup = (act==="all" || groups.some(g=>g.id===act)) ? (act||"all")
+              : (groups[0] ? groups[0].id : "all");
 }
-function saveWatch(){
-  try{ localStorage.setItem("rs-watch-"+market, JSON.stringify([...watch])); }catch(e){}
+function saveGroups(){
+  try{
+    localStorage.setItem("rs-groups-"+market, JSON.stringify(groups));
+    localStorage.setItem("rs-active-"+market, activeGroup);
+  }catch(e){}
 }
-function updateWatchCount(){
-  document.getElementById("watchcnt").textContent = watch.size ? `(${watch.size})` : "";
+function activeG(){ return groups.find(g=>g.id===activeGroup); }
+function inActive(tkr){
+  if(activeGroup==="all") return groups.some(g=>g.t.includes(tkr));
+  const g=activeG(); return !!g && g.t.includes(tkr);
+}
+function activeTickerSet(){
+  if(activeGroup==="all"){ const s=new Set(); groups.forEach(g=>g.t.forEach(t=>s.add(t))); return s; }
+  const g=activeG(); return new Set(g?g.t:[]);
+}
+function toggleStar(tkr){
+  // star edits the active group; if none is selected, make/seed one
+  if(activeGroup==="all"){
+    if(groups.length===0){ groups.push({id:newGid(), name:"관심종목", t:[]}); }
+    activeGroup = groups[0] ? groups[0].id : "all";   // fall into a concrete group
+  }
+  const g=activeG(); if(!g) return;
+  const i=g.t.indexOf(tkr);
+  if(i>=0) g.t.splice(i,1); else g.t.push(tkr);
+  saveGroups();
+}
+function addGroup(){
+  const name=(prompt("새 관심그룹 이름 (예: 광통신, 메모리, 소부장)")||"").trim();
+  if(!name) return;
+  const g={id:newGid(), name, t:[]};
+  groups.push(g); activeGroup=g.id; saveGroups(); refreshView();
+}
+function renameGroup(id){
+  const g=groups.find(x=>x.id===id); if(!g) return;
+  const name=(prompt("그룹 이름 변경", g.name)||"").trim();
+  if(name){ g.name=name; saveGroups(); renderGroups(); }
+}
+function deleteGroup(id){
+  const g=groups.find(x=>x.id===id); if(!g) return;
+  if(!confirm(`'${g.name}' 그룹을 삭제할까요? (종목 ${g.t.length}개)`)) return;
+  groups=groups.filter(x=>x.id!==id);
+  if(activeGroup===id) activeGroup = groups[0] ? groups[0].id : "all";
+  saveGroups(); refreshView();
+}
+function renderGroups(){
+  const el=document.getElementById("groupBar");
+  const union=new Set(); groups.forEach(g=>g.t.forEach(t=>union.add(t)));
+  let html=`<div class="gchip ${activeGroup==="all"?"active":""}" data-g="all">전체 <span class="gcnt">${union.size}</span></div>`;
+  for(const g of groups){
+    const on=g.id===activeGroup;
+    html+=`<div class="gchip ${on?"active":""}" data-g="${g.id}" title="더블클릭: 이름변경">`+
+          `${esc(g.name)} <span class="gcnt">${g.t.length}</span>`+
+          (on?`<span class="gx" data-del="${g.id}" title="그룹 삭제">✕</span>`:"")+`</div>`;
+  }
+  html+=`<div class="gchip add" id="gAdd">+ 새 그룹</div>`;
+  html+=`<label class="gfilter"><input type="checkbox" id="gFilter" ${groupFilter?"checked":""}> 이 그룹만 보기</label>`;
+  el.innerHTML=html;
+  el.querySelectorAll(".gchip[data-g]").forEach(c=>{
+    c.onclick=e=>{ if(e.target.dataset.del) return; activeGroup=c.dataset.g; saveGroups(); refreshView(); };
+    c.ondblclick=()=>{ if(c.dataset.g!=="all") renameGroup(c.dataset.g); };
+  });
+  el.querySelectorAll(".gx").forEach(x=>x.onclick=e=>{ e.stopPropagation(); deleteGroup(x.dataset.del); });
+  document.getElementById("gAdd").onclick=addGroup;
+  document.getElementById("gFilter").onchange=e=>{ groupFilter=e.target.checked; applyFilters(); };
 }
 
 function setMarket(m){
@@ -581,8 +669,7 @@ function setMarket(m){
   market = m;
   DATA = data; rows = DATA.stocks;
   precomputePercentiles();
-  watch = loadWatch(m);
-  updateWatchCount();
+  loadGroups(m);
   // toggle UI
   document.querySelectorAll("#marketToggle button").forEach(b=>b.classList.toggle("active", b.dataset.m===m));
   // market-cap dropdown rebuilt per market
@@ -703,7 +790,6 @@ function init(){
   document.getElementById("search").addEventListener("input", applyFilters);
   document.getElementById("sector").addEventListener("change", applyFilters);
   document.getElementById("mcap").addEventListener("change", applyFilters);
-  document.getElementById("watchonly").addEventListener("change", e=>{ watchOnly=e.target.checked; applyFilters(); });
   document.getElementById("pagesize").addEventListener("change", e=>{ pageSize=parseInt(e.target.value); page=0; render(); });
   document.querySelectorAll("#marketToggle button").forEach(b=>{ b.onclick=()=>setMarket(b.dataset.m); });
   document.querySelectorAll("#viewToggle button").forEach(b=>{ b.onclick=()=>setViewMode(b.dataset.v); });
@@ -712,11 +798,9 @@ function init(){
     const chart = e.target.closest(".chartlink");
     if(chart){ openChart(chart.dataset.tkr); return; }
     const cell = e.target.closest(".star"); if(!cell) return;
-    const tkr = cell.dataset.tkr;
-    if(watch.has(tkr)) watch.delete(tkr); else watch.add(tkr);
-    saveWatch(); updateWatchCount();
-    if(watchOnly) applyFilters();
-    else { cell.classList.toggle("on"); cell.textContent = watch.has(tkr) ? "★" : "☆"; }
+    toggleStar(cell.dataset.tkr);
+    // re-render so the group counts + (if filtered) the visible set stay in sync
+    applyFilters();
   });
   // deviation chart modal controls
   document.getElementById("mClose").onclick=closeChart;
