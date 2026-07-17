@@ -233,6 +233,7 @@ const COLS = [
   {key:"marketCap",label:"시총",align:"r", sortable:true},
   ...PERIODS.map(p=>({key:"r."+p, label:PLABEL[p], align:"r", sortable:true, period:p})),
   {key:"score", label:"RS점수",align:"r", sortable:true},
+  {key:"scoreShort", label:"단기RS",align:"r", sortable:true},
   {key:"quality",label:"품질", align:"r", sortable:true},
   {key:"accel",  label:"가속", align:"r", sortable:true},
   {key:"dev.heat",  label:"과열도", align:"r", sortable:true},
@@ -240,7 +241,8 @@ const COLS = [
   {key:"dev.dev200",label:"이격200",align:"r", sortable:true},
 ];
 const SORT_TABS = [...PERIODS.map(p=>({key:"r."+p,label:PLABEL[p]})),
-  {key:"score",label:"RS점수"},{key:"quality",label:"품질"},{key:"accel",label:"가속"}];
+  {key:"score",label:"RS점수"},{key:"scoreShort",label:"단기RS"},
+  {key:"quality",label:"품질"},{key:"accel",label:"가속"}];
 const METRIC_KEYS = new Set(SORT_TABS.map(t=>t.key));
 const TAB_LABEL = Object.fromEntries(SORT_TABS.map(t=>[t.key,t.label]));
 const COL_LABEL = Object.fromEntries(COLS.map(c=>[c.key,c.label]));
@@ -298,6 +300,11 @@ function scoreCell(v){
   if(v==null) return `<td class="num na">—</td>`;
   const a=(v/99*0.34).toFixed(3);            // green heat, stronger = brighter
   return `<td class="num score" style="background:rgba(34,197,94,${a})"><b>${v}</b></td>`;
+}
+function scoreShortCell(v){                    // 단기RS — teal so it reads as "the other" score
+  if(v==null) return `<td class="num na">—</td>`;
+  const a=(v/99*0.34).toFixed(3);
+  return `<td class="num score" style="background:rgba(45,212,191,${a})"><b>${v}</b></td>`;
 }
 function qualCell(v){                          // trend smoothness R^2, 0..1
   if(v==null) return `<td class="num na">—</td>`;
@@ -419,6 +426,7 @@ function render(){
       cells+=`<td class="num ${pctClass(v)}${sortedCol}">${fmtPct(v)}</td>`;
     }
     cells+=scoreCell(r.score);
+    cells+=scoreShortCell(r.scoreShort);
     cells+=qualCell(r.quality);
     cells+=accelCell(r.accel);
     const dv=r.dev||{};
@@ -689,6 +697,7 @@ function setMarket(m){
     `시총 ≥ ${esc(DATA.market.minMarketCapLabel)} · 분할조정 주가수익률(배당 제외) · `+
     `<span title="${DATA.generatedAt}">갱신 ${DATA.generatedAt.slice(0,10)}</span>`+
     (DATA.scoreBasis ? `<br><b>RS점수</b> = ${esc(DATA.scoreBasis)} → 1~99 (99=최강)` : "")+
+    (DATA.scoreShortBasis ? `<br><b>단기RS</b> = ${esc(DATA.scoreShortBasis)} → 1~99` : "")+
     (DATA.signalsBasis ? `<br>${esc(DATA.signalsBasis)}` : "");
   try{ localStorage.setItem("rs-market", m); }catch(e){}
   page=0;

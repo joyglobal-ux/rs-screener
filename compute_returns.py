@@ -69,35 +69,52 @@ SCORE_WEIGHTS = {"1M": 10, "3M": 36, "6M": 32, "1Y": 22}
 SCORE_REQUIRED = "6M"  # need ~6 months of history to earn a score
 SCORE_BASIS = "1M·3M·6M·12M 가중 백분위 (추세추종 틸트 10/36/32/22), 1W·YTD 제외"
 
+# Short-term RS ("단기RS"): what is moving NOW, for the ≤1-month trade bucket.
+# 1W is included on purpose here (that is the point of this column); 1M anchors;
+# 3M keeps just enough context that a one-week spike alone can't top the list.
+# Requires only 1M of history so recent IPOs can rank.
+SHORT_WEIGHTS = {"1W": 25, "1M": 50, "3M": 25}
+SHORT_REQUIRED = "1M"
+SHORT_BASIS = "1W·1M·3M 가중 백분위 (25/50/25) — 지금 움직이는 강도, 단기 되돌림에 민감"
 
-def compute_scores(stocks: list[dict]) -> None:
-    """Add an IBD-style 1-99 'score' to each stock, in place.
+
+def _composite_score(stocks: list[dict], weights_map: dict[str, int],
+                     required: str) -> pd.Series:
+    """IBD-style 1-99 composite for one weight set.
 
     For each scoring period, rank stocks into a 0-100 cross-sectional percentile
     (robust to outliers like a +8000% mover). Take the weighted average of the
     available period percentiles (weights renormalized when a period is missing),
-    requiring at least ~6 months of history. Finally re-rank that composite into
-    a 1-99 score so 99 = strongest relative strength.
+    requiring the `required` period. Finally re-rank that composite into a 1-99
+    score so 99 = strongest relative strength.
     """
-    if not stocks:
-        return
-    df = pd.DataFrame([{p: s["r"].get(p) for p in SCORE_WEIGHTS} for s in stocks])
-    pct = pd.DataFrame({p: df[p].rank(pct=True) * 100.0 for p in SCORE_WEIGHTS})
-    weights = pd.Series({p: float(w) for p, w in SCORE_WEIGHTS.items()})
+    df = pd.DataFrame([{p: s["r"].get(p) for p in weights_map} for s in stocks])
+    pct = pd.DataFrame({p: df[p].rank(pct=True) * 100.0 for p in weights_map})
+    weights = pd.Series({p: float(w) for p, w in weights_map.items()})
 
     composite = []
     for i in range(len(df)):
         row = pct.iloc[i].dropna()
-        if SCORE_REQUIRED not in row.index:
+        if required not in row.index:
             composite.append(float("nan"))
             continue
         w = weights[row.index]
         composite.append(float((row * w).sum() / w.sum()))
 
-    final = (pd.Series(composite).rank(pct=True) * 98 + 1).round()
+    return (pd.Series(composite).rank(pct=True) * 98 + 1).round()
+
+
+def compute_scores(stocks: list[dict]) -> None:
+    """Add 'score' (trend RS) and 'scoreShort' (단기RS) to each stock, in place."""
+    if not stocks:
+        return
+    long_s = _composite_score(stocks, SCORE_WEIGHTS, SCORE_REQUIRED)
+    short_s = _composite_score(stocks, SHORT_WEIGHTS, SHORT_REQUIRED)
     for i, s in enumerate(stocks):
-        v = final.iloc[i]
+        v = long_s.iloc[i]
         s["score"] = int(v) if pd.notna(v) else None
+        v = short_s.iloc[i]
+        s["scoreShort"] = int(v) if pd.notna(v) else None
 
 
 def period_targets(last_date: pd.Timestamp) -> dict[str, pd.Timestamp]:
@@ -305,6 +322,8 @@ def main() -> None:
         compute_scores(payload["stocks"])
         payload["scoreWeights"] = SCORE_WEIGHTS
         payload["scoreBasis"] = SCORE_BASIS
+        payload["scoreShortWeights"] = SHORT_WEIGHTS
+        payload["scoreShortBasis"] = SHORT_BASIS
         payload["market"] = MARKET_META[args.market]
         payload["minMarketCap"] = MARKET_META[args.market]["minMarketCap"]
         write_outputs(payload, paths)
@@ -426,6 +445,8 @@ def main() -> None:
         "periods": PERIOD_KEYS,
         "scoreWeights": SCORE_WEIGHTS,
         "scoreBasis": SCORE_BASIS,
+        "scoreShortWeights": SHORT_WEIGHTS,
+        "scoreShortBasis": SHORT_BASIS,
         "signalsBasis": "품질 = 6M 추세 직선성(log가격 R², 1=완벽직선) · 가속 = 최근3M − 직전3M (%p) · "
                          "이격 = 현재가 vs MA50/MA200 (%) · 과열도 = 50D 이격의 자기 1년 분포 내 백분위(0~100)",
         "count": len(stocks),
