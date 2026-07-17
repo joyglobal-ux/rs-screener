@@ -163,6 +163,7 @@
   <div class="controls" id="controls">
     <input id="search" type="text" placeholder="티커 / 종목명 검색…" autocomplete="off">
     <select id="sector"><option value="">전체 섹터</option></select>
+    <select id="industry" style="display:none"><option value="">전체 세부업종</option></select>
     <select id="mcap"></select>
     <span class="spacer"></span>
     <select id="pagesize">
@@ -187,6 +188,10 @@
 
   <div class="pager" id="pager"></div>
 
+  <div class="view-toggle" id="secLevel" style="display:none">
+    <button data-l="sector" class="active">섹터</button>
+    <button data-l="industry">세부업종</button>
+  </div>
   <div class="sorthint" id="sectorhint" style="display:none"></div>
   <div class="tablewrap" id="sectorwrap" style="display:none">
     <table>
@@ -256,6 +261,7 @@ let sortMode="composite", picks=["score"], compDir="desc", colKey="score", colDi
 // = a group id (the star-edit target) or "all" (read-only union view).
 let groups=[], activeGroup="all", groupFilter=false;
 let viewMode="stocks", secSortKey="medScore", secSortDir="desc";
+let secLevel="sector";   // 섹터 RS 뷰 집계 단위: "sector" | "industry" (US 전용)
 const SECTOR_COLS=[
   {key:"sector",  label:"섹터",      align:"l"},
   {key:"n",       label:"종목수",    align:"r"},
@@ -381,12 +387,14 @@ function sortView(){
 function applyFilters(){
   const q=document.getElementById("search").value.trim().toLowerCase();
   const sec=document.getElementById("sector").value;
+  const ind=document.getElementById("industry").value;
   const minCap=parseFloat(document.getElementById("mcap").value)||0;
   const activeMembers=activeTickerSet();
   view = rows.filter(r=>{
     if(groupFilter && !activeMembers.has(r.ticker)) return false;
     if(r.marketCap<minCap) return false;
     if(sec && r.sector!==sec) return false;
+    if(ind && (r.industry||"기타")!==ind) return false;
     if(q && !(r.ticker.toLowerCase().includes(q) || r.name.toLowerCase().includes(q))) return false;
     return true;
   });
@@ -517,13 +525,36 @@ function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",
 function median(a){ if(!a.length) return null; const b=[...a].sort((x,y)=>x-y); const m=b.length>>1; return b.length%2 ? b[m] : (b[m-1]+b[m])/2; }
 function heatGreen(v,max){ const a=(Math.max(0,Math.min(v,max))/max*0.34).toFixed(3); return `background:rgba(34,197,94,${a})`; }
 
+// US-only second-level filter: industries within the selected sector (or the
+// whole market), biggest group first so the heavyweights are easy to reach.
+// KR is intentionally excluded — its WICS sectors are already theme-grained,
+// while its industry field is KSIC (poor thematic fit).
+function rebuildIndustryOptions(){
+  const el=document.getElementById("industry");
+  if(market!=="us"){ el.style.display="none"; el.value=""; return; }
+  el.style.display="";
+  const sec=document.getElementById("sector").value;
+  const counts={};
+  rows.forEach(r=>{
+    if(sec && r.sector!==sec) return;
+    const k=r.industry||"기타"; counts[k]=(counts[k]||0)+1;
+  });
+  const prev=el.value;
+  const opts=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  el.innerHTML='<option value="">전체 세부업종</option>'
+    + opts.map(([k,n])=>`<option value="${esc(k)}">${esc(k)} (${n})</option>`).join("");
+  el.value = counts[prev] ? prev : "";
+}
+
 // Aggregate the loaded universe into per-sector strength. RS Score is already a
 // market-wide percentile, so a sector's median RS = where its typical stock
 // sits in the whole market; breadth = share of names that are genuine leaders
 // (RS≥90); the 1M..12M cells are median per-period percentiles → rotation.
+// secLevel="industry" swaps the grouping key to the finer Nasdaq industry (US).
 function sectorAgg(){
   const by={};
-  rows.forEach(r=>{ const s=r.sector||"기타"; (by[s]||(by[s]=[])).push(r); });
+  const keyOf = secLevel==="industry" ? (r=>r.industry||"기타") : (r=>r.sector||"기타");
+  rows.forEach(r=>{ const s=keyOf(r); (by[s]||(by[s]=[])).push(r); });
   const out=[];
   for(const sector in by){
     const list=by[sector];
@@ -542,6 +573,7 @@ function sectorAgg(){
 }
 
 function renderSectors(){
+  document.querySelectorAll("#secLevel button").forEach(b=>b.classList.toggle("active", b.dataset.l===secLevel));
   const data=sectorAgg();
   data.sort((a,b)=>{
     const x=a[secSortKey], y=b[secSortKey];
@@ -553,7 +585,8 @@ function renderSectors(){
   th.innerHTML=SECTOR_COLS.map(c=>{
     const sorted=c.key===secSortKey;
     const arr=sorted?`<span class="arr">${secSortDir==="desc"?"▼":"▲"}</span>`:"";
-    return `<th class="${c.align==='l'?'l':''} ${sorted?'sorted':''}" data-k="${c.key}">${c.label}${arr}</th>`;
+    const label = c.key==="sector" && secLevel==="industry" ? "세부업종" : c.label;
+    return `<th class="${c.align==='l'?'l':''} ${sorted?'sorted':''}" data-k="${c.key}">${label}${arr}</th>`;
   }).join("");
   th.querySelectorAll("th").forEach(h=>h.onclick=()=>{
     const k=h.dataset.k;
@@ -574,12 +607,22 @@ function renderSectors(){
     return `<tr class="sec-row">${c}</tr>`;
   }).join("");
   tb.querySelectorAll(".sec-name").forEach(td=>td.onclick=()=>{
-    document.getElementById("sector").value=td.dataset.sec;
+    if(secLevel==="industry"){
+      // industries can span sectors (e.g. Industrial Machinery/Components),
+      // so drill down via the industry filter alone
+      document.getElementById("sector").value="";
+      rebuildIndustryOptions();
+      document.getElementById("industry").value=td.dataset.sec;
+    } else {
+      document.getElementById("sector").value=td.dataset.sec;
+      rebuildIndustryOptions();
+    }
     setViewMode("stocks"); applyFilters();
   });
+  const unit = secLevel==="industry" ? "세부업종" : "섹터";
   document.getElementById("sectorhint").innerHTML =
-    `<b>RS 중앙값</b> = 섹터 종목들의 시장 백분위 중앙값 · <b>RS≥90 비중</b> = 강세 폭(breadth) · `+
-    `<b>1M~12M</b> = 기간별 시장 백분위 중앙값(로테이션) · 섹터 클릭 → 해당 종목 목록 · 종목 3개 미만 섹터 제외`;
+    `<b>RS 중앙값</b> = ${unit} 종목들의 시장 백분위 중앙값 · <b>RS≥90 비중</b> = 강세 폭(breadth) · `+
+    `<b>1M~12M</b> = 기간별 시장 백분위 중앙값(로테이션) · ${unit} 클릭 → 해당 종목 목록 · 종목 3개 미만 ${unit} 제외`;
 }
 
 function setViewMode(v){
@@ -587,6 +630,7 @@ function setViewMode(v){
   document.querySelectorAll("#viewToggle button").forEach(b=>b.classList.toggle("active", b.dataset.v===v));
   ["controls","groupBar","tabs","sorthint","tablewrap","pager"].forEach(id=>document.getElementById(id).style.display = v==="stocks"?"":"none");
   ["sectorhint","sectorwrap"].forEach(id=>document.getElementById(id).style.display = v==="sectors"?"":"none");
+  document.getElementById("secLevel").style.display = (v==="sectors" && market==="us") ? "" : "none";
   if(v==="sectors") renderSectors(); else render();
 }
 function refreshView(){ if(viewMode==="sectors") renderSectors(); else applyFilters(); }
@@ -692,6 +736,9 @@ function setMarket(m){
   [...new Set(rows.map(r=>r.sector))].filter(Boolean).sort().forEach(s=>{
     const o=document.createElement("option"); o.value=s; o.textContent=s; sec.appendChild(o);
   });
+  rebuildIndustryOptions();                      // US: populate · KR: hide+clear
+  if(market!=="us") secLevel="sector";           // industry 집계는 US 전용
+  document.getElementById("secLevel").style.display = (viewMode==="sectors" && market==="us") ? "" : "none";
   document.getElementById("meta").innerHTML =
     `<b>${esc(DATA.market.label)}</b> · 기준일 <b>${DATA.asOf}</b> · <b>${DATA.count.toLocaleString()}</b>개 종목 · `+
     `시총 ≥ ${esc(DATA.market.minMarketCapLabel)} · 분할조정 주가수익률(배당 제외) · `+
@@ -800,7 +847,9 @@ function init(){
     return;
   }
   document.getElementById("search").addEventListener("input", applyFilters);
-  document.getElementById("sector").addEventListener("change", applyFilters);
+  document.getElementById("sector").addEventListener("change", ()=>{ rebuildIndustryOptions(); applyFilters(); });
+  document.getElementById("industry").addEventListener("change", applyFilters);
+  document.querySelectorAll("#secLevel button").forEach(b=>b.onclick=()=>{ secLevel=b.dataset.l; renderSectors(); });
   document.getElementById("mcap").addEventListener("change", applyFilters);
   document.getElementById("pagesize").addEventListener("change", e=>{ pageSize=parseInt(e.target.value); page=0; render(); });
   document.querySelectorAll("#marketToggle button").forEach(b=>{ b.onclick=()=>setMarket(b.dataset.m); });
