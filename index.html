@@ -636,6 +636,38 @@ function setViewMode(v){
 function refreshView(){ if(viewMode==="sectors") renderSectors(); else applyFilters(); }
 
 function newGid(){ return "g"+Math.random().toString(36).slice(2,8); }
+
+// Built-in theme baskets, seeded once per market so they show up on any device
+// (groups otherwise live only in localStorage). Each has a stable `pk`; once
+// seeded the key is remembered, so deleting or editing a preset sticks.
+const PRESET_GROUPS = {
+  us: [
+    {pk:"rb-us-drive", name:"로봇US·구동/소재",  t:["TKR","RBC","RRX","ALNT","NOVT","AME","PH","CRS","ATI"]},
+    {pk:"rb-us-sense", name:"로봇US·센싱/비전",  t:["CGNX","TDY","ST","OUST","AMBA","KEYS"]},
+    {pk:"rb-us-auto",  name:"로봇US·자동화/SI",  t:["ROK","SYM","TER","ZBRA","EMR","HON","NDSN","FTV","JBTM"]},
+    {pk:"rb-us-brain", name:"로봇US·두뇌/완제품", t:["NVDA","TSLA","ISRG","PRCT","GOOGL","AMZN"]},
+  ],
+  kr: [
+    {pk:"rb-kr-drive", name:"로봇KR·감속기/구동", t:["389500.KQ","058610.KQ","108490.KQ","160190.KQ","003570.KS","264850.KQ","199430.KQ","140670.KQ"]},
+    {pk:"rb-kr-oem",   name:"로봇KR·완제품/SI",  t:["454910.KS","277810.KQ","348340.KQ","388720.KQ","090360.KQ","117730.KQ","466100.KQ","475400.KQ","090710.KQ"]},
+    {pk:"rb-kr-sense", name:"로봇KR·센싱/전방",  t:["098460.KQ","100120.KQ","066570.KS","005380.KS","307950.KS","010120.KS","018880.KS"]},
+  ],
+};
+// Adds any preset not yet seeded for this market. The seeded-key list is what
+// makes it one-shot: a preset the user later renames or deletes never returns.
+function seedPresets(m, gs){
+  let done=[];
+  try{ done=JSON.parse(localStorage.getItem("rs-preset-seeded-"+m)||"[]"); }catch(e){}
+  if(!Array.isArray(done)) done=[];
+  let changed=false;
+  for(const p of (PRESET_GROUPS[m]||[])){
+    if(done.includes(p.pk)) continue;
+    gs.push({id:newGid(), pk:p.pk, name:p.name, t:p.t.slice()});
+    done.push(p.pk); changed=true;
+  }
+  if(changed){ try{ localStorage.setItem("rs-preset-seeded-"+m, JSON.stringify(done)); }catch(e){} }
+  return changed;
+}
 function loadGroups(m){
   let gs=null;
   try{ gs=JSON.parse(localStorage.getItem("rs-groups-"+m)); }catch(e){}
@@ -644,7 +676,9 @@ function loadGroups(m){
     let legacy=[]; try{ legacy=JSON.parse(localStorage.getItem("rs-watch-"+m)||"[]"); }catch(e){}
     gs = legacy.length ? [{id:newGid(), name:"관심종목", t:legacy}] : [];
   }
+  const seeded = seedPresets(m, gs);
   groups = gs;
+  if(seeded){ try{ localStorage.setItem("rs-groups-"+m, JSON.stringify(groups)); }catch(e){} }
   let act="all"; try{ act=localStorage.getItem("rs-active-"+m)||""; }catch(e){}
   // default to the first group (so starring works immediately); "all" only if asked
   activeGroup = (act==="all" || groups.some(g=>g.id===act)) ? (act||"all")
