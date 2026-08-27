@@ -455,7 +455,7 @@
     "name": "Home Depot Inc. (The)",
     "sector": "Consumer Discretionary",
     "industry": "RETAIL: Building Materials",
-    "marketCap": 333884520968.0,
+    "marketCap": 334076371266.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -1360,16 +1360,6 @@
     "ipoYear": "2018"
   },
   {
-    "ticker": "BMO",
-    "nasdaqSymbol": "BMO",
-    "name": "Bank Of Montreal",
-    "sector": "Finance",
-    "industry": "Commercial Banks",
-    "marketCap": 121880652958.0,
-    "country": "Canada",
-    "ipoYear": ""
-  },
-  {
     "ticker": "ACN",
     "nasdaqSymbol": "ACN",
     "name": "Accenture plc Class A Ordinary Shares (Ireland)",
@@ -1387,6 +1377,16 @@
     "industry": "Retail-Drug Stores and Proprietary Stores",
     "marketCap": 120632485204.0,
     "country": "United States",
+    "ipoYear": ""
+  },
+  {
+    "ticker": "BMO",
+    "nasdaqSymbol": "BMO",
+    "name": "Bank Of Montreal",
+    "sector": "Finance",
+    "industry": "Commercial Banks",
+    "marketCap": 120536612214.0,
+    "country": "Canada",
     "ipoYear": ""
   },
   {
@@ -3900,6 +3900,16 @@
     "ipoYear": "2015"
   },
   {
+    "ticker": "CRDO",
+    "nasdaqSymbol": "CRDO",
+    "name": "Credo Technology Group Holding Ltd Ordinary Shares",
+    "sector": "Technology",
+    "industry": "Semiconductors",
+    "marketCap": 42565322502.0,
+    "country": "United States",
+    "ipoYear": "2022"
+  },
+  {
     "ticker": "HBANM",
     "nasdaqSymbol": "HBANM",
     "name": "Huntington Bancshares Incorporated Depositary Shares each representing a 1/1000th interest in a share of Huntington Series I Preferred Stock",
@@ -3908,16 +3918,6 @@
     "marketCap": 42287282308.0,
     "country": "United States",
     "ipoYear": ""
-  },
-  {
-    "ticker": "CRDO",
-    "nasdaqSymbol": "CRDO",
-    "name": "Credo Technology Group Holding Ltd Ordinary Shares",
-    "sector": "Technology",
-    "industry": "Semiconductors",
-    "marketCap": 42235379118.0,
-    "country": "United States",
-    "ipoYear": "2022"
   },
   {
     "ticker": "YUM",
@@ -4417,7 +4417,7 @@
     "industry": "Agricultural Chemicals",
     "marketCap": 35477239971.0,
     "country": "Canada",
-    "ipoYear": "2018"
+    "ipoYear": "2004"
   },
   {
     "ticker": "VMC",
@@ -9020,16 +9020,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "BJ",
-    "nasdaqSymbol": "BJ",
-    "name": "BJ's Wholesale Club Holdings Inc.",
-    "sector": "Consumer Discretionary",
-    "industry": "Department/Specialty Retail Stores",
-    "marketCap": 11917679807.0,
-    "country": "United States",
-    "ipoYear": "2018"
-  },
-  {
     "ticker": "EHC",
     "nasdaqSymbol": "EHC",
     "name": "Encompass Health Corporation",
@@ -9078,6 +9068,16 @@
     "marketCap": 11822278933.0,
     "country": "United States",
     "ipoYear": "2014"
+  },
+  {
+    "ticker": "BJ",
+    "nasdaqSymbol": "BJ",
+    "name": "BJ's Wholesale Club Holdings Inc.",
+    "sector": "Consumer Discretionary",
+    "industry": "Department/Specialty Retail Stores",
+    "marketCap": 11788950204.0,
+    "country": "United States",
+    "ipoYear": "2018"
   },
   {
     "ticker": "CART",
@@ -18610,16 +18610,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "MZTI",
-    "nasdaqSymbol": "MZTI",
-    "name": "The Marzetti Company",
-    "sector": "Consumer Staples",
-    "industry": "Packaged Foods",
-    "marketCap": 3111025900.0,
-    "country": "United States",
-    "ipoYear": ""
-  },
-  {
     "ticker": "ARCB",
     "nasdaqSymbol": "ARCB",
     "name": "ArcBest Corporation",
@@ -18668,6 +18658,16 @@
     "marketCap": 3100333667.0,
     "country": "United States",
     "ipoYear": "2020"
+  },
+  {
+    "ticker": "MZTI",
+    "nasdaqSymbol": "MZTI",
+    "name": "The Marzetti Company",
+    "sector": "Consumer Staples",
+    "industry": "Packaged Foods",
+    "marketCap": 3096163950.0,
+    "country": "United States",
+    "ipoYear": ""
   },
   {
     "ticker": "INTA",
@@ -20920,16 +20920,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "NCNO",
-    "nasdaqSymbol": "NCNO",
-    "name": "nCino Inc.",
-    "sector": "Technology",
-    "industry": "Computer Software: Prepackaged Software",
-    "marketCap": 2356483955.0,
-    "country": "United States",
-    "ipoYear": "2020"
-  },
-  {
     "ticker": "IOSP",
     "nasdaqSymbol": "IOSP",
     "name": "Innospec Inc.",
@@ -21196,6 +21186,16 @@
     "sector": "Technology",
     "industry": "Computer Software: Prepackaged Software",
     "marketCap": 2275421079.0,
+    "country": "United States",
+    "ipoYear": "2020"
+  },
+  {
+    "ticker": "NCNO",
+    "nasdaqSymbol": "NCNO",
+    "name": "nCino Inc.",
+    "sector": "Technology",
+    "industry": "Computer Software: Prepackaged Software",
+    "marketCap": 2274385103.0,
     "country": "United States",
     "ipoYear": "2020"
   },
@@ -22527,16 +22527,6 @@
     "industry": "Oil and Gas Field Machinery",
     "marketCap": 1976386471.0,
     "country": "United States",
-    "ipoYear": ""
-  },
-  {
-    "ticker": "NAMSW",
-    "nasdaqSymbol": "NAMSW",
-    "name": "NewAmsterdam Pharma Company N.V. Warrant",
-    "sector": "Health Care",
-    "industry": "Biotechnology: Pharmaceutical Preparations",
-    "marketCap": 1973558660.0,
-    "country": "Netherlands",
     "ipoYear": ""
   },
   {
@@ -26158,16 +26148,6 @@
     "marketCap": 1258459422.0,
     "country": "United States",
     "ipoYear": "2003"
-  },
-  {
-    "ticker": "LEG",
-    "nasdaqSymbol": "LEG",
-    "name": "Leggett & Platt Incorporated",
-    "sector": "Consumer Discretionary",
-    "industry": "Home Furnishings",
-    "marketCap": 1256618754.0,
-    "country": "United States",
-    "ipoYear": ""
   },
   {
     "ticker": "BRBR",
