@@ -5,7 +5,7 @@
     "name": "NVIDIA Corporation",
     "sector": "Technology",
     "industry": "Semiconductors",
-    "marketCap": 5517116000000.0,
+    "marketCap": 5494318000000.0,
     "country": "United States",
     "ipoYear": "1999"
   },
@@ -530,6 +530,16 @@
     "ipoYear": ""
   },
   {
+    "ticker": "BABA",
+    "nasdaqSymbol": "BABA",
+    "name": "Alibaba Group Holding Limited American Depositary Shares each representing eight Ordinary share",
+    "sector": "Consumer Discretionary",
+    "industry": "Business Services",
+    "marketCap": 281759348754.0,
+    "country": "China",
+    "ipoYear": "2014"
+  },
+  {
     "ticker": "SAP",
     "nasdaqSymbol": "SAP",
     "name": "SAP  SE ADS",
@@ -548,16 +558,6 @@
     "marketCap": 271557540863.0,
     "country": "United Kingdom",
     "ipoYear": "2023"
-  },
-  {
-    "ticker": "BABA",
-    "nasdaqSymbol": "BABA",
-    "name": "Alibaba Group Holding Limited American Depositary Shares each representing eight Ordinary share",
-    "sector": "Consumer Discretionary",
-    "industry": "Business Services",
-    "marketCap": 271436836254.0,
-    "country": "China",
-    "ipoYear": "2014"
   },
   {
     "ticker": "MUFG",
@@ -2015,7 +2015,7 @@
     "name": "Synopsys Inc.",
     "sector": "Technology",
     "industry": "Computer Software: Prepackaged Software",
-    "marketCap": 89016823399.0,
+    "marketCap": 89089960359.0,
     "country": "United States",
     "ipoYear": "1992"
   },
@@ -5000,16 +5000,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "ZM",
-    "nasdaqSymbol": "ZM",
-    "name": "Zoom Communications Inc. Class A",
-    "sector": "Technology",
-    "industry": "Computer Software: Programming Data Processing",
-    "marketCap": 29402394499.0,
-    "country": "United States",
-    "ipoYear": "2019"
-  },
-  {
     "ticker": "NMR",
     "nasdaqSymbol": "NMR",
     "name": "Nomura Holdings Inc ADR American Depositary Shares",
@@ -5018,6 +5008,16 @@
     "marketCap": 29361532707.0,
     "country": "Japan",
     "ipoYear": ""
+  },
+  {
+    "ticker": "ZM",
+    "nasdaqSymbol": "ZM",
+    "name": "Zoom Communications Inc. Class A",
+    "sector": "Technology",
+    "industry": "Computer Software: Programming Data Processing",
+    "marketCap": 29257152702.0,
+    "country": "United States",
+    "ipoYear": "2019"
   },
   {
     "ticker": "ATI",
@@ -8125,7 +8125,7 @@
     "name": "The J.M. Smucker Company",
     "sector": "Consumer Staples",
     "industry": "Packaged Foods",
-    "marketCap": 14091150170.0,
+    "marketCap": 14083568447.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -8440,22 +8440,22 @@
     "ipoYear": "2022"
   },
   {
+    "ticker": "SMTC",
+    "nasdaqSymbol": "SMTC",
+    "name": "Semtech Corporation",
+    "sector": "Technology",
+    "industry": "Semiconductors",
+    "marketCap": 13292368911.0,
+    "country": "United States",
+    "ipoYear": ""
+  },
+  {
     "ticker": "HAS",
     "nasdaqSymbol": "HAS",
     "name": "Hasbro Inc.",
     "sector": "Consumer Discretionary",
     "industry": "Recreational Games/Products/Toys",
     "marketCap": 13283567902.0,
-    "country": "United States",
-    "ipoYear": ""
-  },
-  {
-    "ticker": "SMTC",
-    "nasdaqSymbol": "SMTC",
-    "name": "Semtech Corporation",
-    "sector": "Technology",
-    "industry": "Semiconductors",
-    "marketCap": 13267520858.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -15040,16 +15040,6 @@
     "ipoYear": "2006"
   },
   {
-    "ticker": "BOX",
-    "nasdaqSymbol": "BOX",
-    "name": "Box Inc. Class A",
-    "sector": "Technology",
-    "industry": "Computer Software: Prepackaged Software",
-    "marketCap": 4809746921.0,
-    "country": "United States",
-    "ipoYear": "2015"
-  },
-  {
     "ticker": "EWTX",
     "nasdaqSymbol": "EWTX",
     "name": "Edgewise Therapeutics Inc.",
@@ -15108,6 +15098,16 @@
     "marketCap": 4770687173.0,
     "country": "United States",
     "ipoYear": ""
+  },
+  {
+    "ticker": "BOX",
+    "nasdaqSymbol": "BOX",
+    "name": "Box Inc. Class A",
+    "sector": "Technology",
+    "industry": "Computer Software: Prepackaged Software",
+    "marketCap": 4766354854.0,
+    "country": "United States",
+    "ipoYear": "2015"
   },
   {
     "ticker": "TKC",
@@ -17105,7 +17105,7 @@
     "name": "Bath & Body Works Inc.",
     "sector": "Consumer Discretionary",
     "industry": "Other Specialty Stores",
-    "marketCap": 3759127794.0,
+    "marketCap": 3760685087.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -19095,7 +19095,7 @@
     "name": "Silvercorp Metals Inc. Common Shares",
     "sector": "Basic Materials",
     "industry": "Precious Metals",
-    "marketCap": 2977436919.0,
+    "marketCap": 2973460862.0,
     "country": "Canada",
     "ipoYear": ""
   },
@@ -21426,16 +21426,6 @@
     "sector": "Consumer Discretionary",
     "industry": "Clothing/Shoe/Accessory Stores",
     "marketCap": 2211156251.0,
-    "country": "United States",
-    "ipoYear": ""
-  },
-  {
-    "ticker": "PCTTU",
-    "nasdaqSymbol": "PCTTU",
-    "name": "PureCycle Technologies Inc. Unit",
-    "sector": "Industrials",
-    "industry": "Major Chemicals",
-    "marketCap": 2209952910.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -24070,16 +24060,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "FBRX",
-    "nasdaqSymbol": "FBRX",
-    "name": "Forte Biosciences Inc.",
-    "sector": "Health Care",
-    "industry": "Biotechnology: Pharmaceutical Preparations",
-    "marketCap": 1634427408.0,
-    "country": "United States",
-    "ipoYear": "2017"
-  },
-  {
     "ticker": "RVLV",
     "nasdaqSymbol": "RVLV",
     "name": "Revolve Group Inc. Class A",
@@ -24890,6 +24870,16 @@
     "ipoYear": "2006"
   },
   {
+    "ticker": "PAHC",
+    "nasdaqSymbol": "PAHC",
+    "name": "Phibro Animal Health Corporation Class A",
+    "sector": "Health Care",
+    "industry": "Biotechnology: Pharmaceutical Preparations",
+    "marketCap": 1475868269.0,
+    "country": "United States",
+    "ipoYear": "2014"
+  },
+  {
     "ticker": "ECCV",
     "nasdaqSymbol": "ECCV",
     "name": "Eagle Point Credit Company 5.375% Notes due 2029",
@@ -24898,16 +24888,6 @@
     "marketCap": 1475615896.0,
     "country": "United States",
     "ipoYear": "2022"
-  },
-  {
-    "ticker": "PAHC",
-    "nasdaqSymbol": "PAHC",
-    "name": "Phibro Animal Health Corporation Class A",
-    "sector": "Health Care",
-    "industry": "Biotechnology: Pharmaceutical Preparations",
-    "marketCap": 1474527427.0,
-    "country": "United States",
-    "ipoYear": "2014"
   },
   {
     "ticker": "AZTA",
@@ -25348,6 +25328,16 @@
     "marketCap": 1405176938.0,
     "country": "United States",
     "ipoYear": "2026"
+  },
+  {
+    "ticker": "IMTX",
+    "nasdaqSymbol": "IMTX",
+    "name": "Immatics N.V. Ordinary Shares",
+    "sector": "Health Care",
+    "industry": "Biotechnology: Biological Products (No Diagnostic Substances)",
+    "marketCap": 1400552487.0,
+    "country": "Germany",
+    "ipoYear": ""
   },
   {
     "ticker": "TMP",
@@ -26177,16 +26167,6 @@
     "industry": "Telecommunications Equipment",
     "marketCap": 1261910457.0,
     "country": "United States",
-    "ipoYear": ""
-  },
-  {
-    "ticker": "IMTX",
-    "nasdaqSymbol": "IMTX",
-    "name": "Immatics N.V. Ordinary Shares",
-    "sector": "Health Care",
-    "industry": "Biotechnology: Biological Products (No Diagnostic Substances)",
-    "marketCap": 1255143951.0,
-    "country": "Germany",
     "ipoYear": ""
   },
   {
@@ -27420,16 +27400,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "QNST",
-    "nasdaqSymbol": "QNST",
-    "name": "QuinStreet Inc.",
-    "sector": "Consumer Discretionary",
-    "industry": "Business Services",
-    "marketCap": 1085717493.0,
-    "country": "United States",
-    "ipoYear": "2010"
-  },
-  {
     "ticker": "DSL",
     "nasdaqSymbol": "DSL",
     "name": "DoubleLine Income Solutions Fund Common Shares of Beneficial Interests",
@@ -27458,6 +27428,16 @@
     "marketCap": 1081291318.0,
     "country": "United States",
     "ipoYear": ""
+  },
+  {
+    "ticker": "QNST",
+    "nasdaqSymbol": "QNST",
+    "name": "QuinStreet Inc.",
+    "sector": "Consumer Discretionary",
+    "industry": "Business Services",
+    "marketCap": 1078933130.0,
+    "country": "United States",
+    "ipoYear": "2010"
   },
   {
     "ticker": "SBR",
