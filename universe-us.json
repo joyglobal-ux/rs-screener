@@ -675,7 +675,7 @@
     "name": "KLA Corporation",
     "sector": "Technology",
     "industry": "Electronic Components",
-    "marketCap": 245447878654.0,
+    "marketCap": 245158519587.0,
     "country": "United States",
     "ipoYear": "1980"
   },
@@ -1760,16 +1760,6 @@
     "ipoYear": "2018"
   },
   {
-    "ticker": "ADBE",
-    "nasdaqSymbol": "ADBE",
-    "name": "Adobe Inc.",
-    "sector": "Technology",
-    "industry": "Computer Software: Prepackaged Software",
-    "marketCap": 95674275000.0,
-    "country": "United States",
-    "ipoYear": "1986"
-  },
-  {
     "ticker": "HCA",
     "nasdaqSymbol": "HCA",
     "name": "HCA Healthcare Inc.",
@@ -1778,6 +1768,16 @@
     "marketCap": 94498574720.0,
     "country": "United States",
     "ipoYear": "2011"
+  },
+  {
+    "ticker": "ADBE",
+    "nasdaqSymbol": "ADBE",
+    "name": "Adobe Inc.",
+    "sector": "Technology",
+    "industry": "Computer Software: Prepackaged Software",
+    "marketCap": 93676548000.0,
+    "country": "United States",
+    "ipoYear": "1986"
   },
   {
     "ticker": "PWR",
@@ -10105,7 +10105,7 @@
     "name": "Silicon Motion Technology Corporation American Depositary Shares",
     "sector": "Technology",
     "industry": "Semiconductors",
-    "marketCap": 9376533613.0,
+    "marketCap": 9376644225.0,
     "country": "Taiwan",
     "ipoYear": "2005"
   },
@@ -10383,8 +10383,8 @@
     "ticker": "LLYVK",
     "nasdaqSymbol": "LLYVK",
     "name": "Liberty Live Holdings Inc. Series C Liberty Live Group",
-    "sector": "Industrials",
-    "industry": "Broadcasting",
+    "sector": "Consumer Discretionary",
+    "industry": "Services-Misc. Amusement & Recreation",
     "marketCap": 9031247708.0,
     "country": "United States",
     "ipoYear": ""
@@ -10468,16 +10468,6 @@
     "marketCap": 8935950537.0,
     "country": "United States",
     "ipoYear": "1991"
-  },
-  {
-    "ticker": "EDU",
-    "nasdaqSymbol": "EDU",
-    "name": "New Oriental Education & Technology Group Inc. Sponsored ADR representing 10 Ordinary Share (Cayman Islands)",
-    "sector": "Real Estate",
-    "industry": "Other Consumer Services",
-    "marketCap": 8924893492.0,
-    "country": "China",
-    "ipoYear": "2006"
   },
   {
     "ticker": "EAI",
@@ -10603,8 +10593,8 @@
     "ticker": "LLYVA",
     "nasdaqSymbol": "LLYVA",
     "name": "Liberty Live Holdings Inc. Series A Liberty Live Group",
-    "sector": "Industrials",
-    "industry": "Broadcasting",
+    "sector": "Consumer Discretionary",
+    "industry": "Services-Misc. Amusement & Recreation",
     "marketCap": 8739590666.0,
     "country": "United States",
     "ipoYear": ""
@@ -10628,6 +10618,16 @@
     "marketCap": 8694905296.0,
     "country": "United States",
     "ipoYear": ""
+  },
+  {
+    "ticker": "EDU",
+    "nasdaqSymbol": "EDU",
+    "name": "New Oriental Education & Technology Group Inc. Sponsored ADR representing 10 Ordinary Share (Cayman Islands)",
+    "sector": "Real Estate",
+    "industry": "Other Consumer Services",
+    "marketCap": 8694058846.0,
+    "country": "China",
+    "ipoYear": "2006"
   },
   {
     "ticker": "KTOS",
@@ -16650,16 +16650,6 @@
     "ipoYear": "2014"
   },
   {
-    "ticker": "THO",
-    "nasdaqSymbol": "THO",
-    "name": "Thor Industries Inc.",
-    "sector": "Industrials",
-    "industry": "Homebuilding",
-    "marketCap": 3764268642.0,
-    "country": "United States",
-    "ipoYear": ""
-  },
-  {
     "ticker": "IPAR",
     "nasdaqSymbol": "IPAR",
     "name": "Interparfums Inc.",
@@ -16746,6 +16736,16 @@
     "sector": "Consumer Discretionary",
     "industry": "Rental/Leasing Companies",
     "marketCap": 3732872425.0,
+    "country": "United States",
+    "ipoYear": ""
+  },
+  {
+    "ticker": "THO",
+    "nasdaqSymbol": "THO",
+    "name": "Thor Industries Inc.",
+    "sector": "Industrials",
+    "industry": "Homebuilding",
+    "marketCap": 3732234444.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -26220,6 +26220,16 @@
     "ipoYear": "2018"
   },
   {
+    "ticker": "PSEC",
+    "nasdaqSymbol": "PSEC",
+    "name": "Prospect Capital Corporation",
+    "sector": "Finance",
+    "industry": "Finance: Consumer Services",
+    "marketCap": 1158382562.0,
+    "country": "United States",
+    "ipoYear": "2004"
+  },
+  {
     "ticker": "BRAI",
     "nasdaqSymbol": "BRAI",
     "name": "Braiin Limited",
@@ -26398,16 +26408,6 @@
     "marketCap": 1139665410.0,
     "country": "United States",
     "ipoYear": "2026"
-  },
-  {
-    "ticker": "PSEC",
-    "nasdaqSymbol": "PSEC",
-    "name": "Prospect Capital Corporation",
-    "sector": "Finance",
-    "industry": "Finance: Consumer Services",
-    "marketCap": 1138886516.0,
-    "country": "United States",
-    "ipoYear": "2004"
   },
   {
     "ticker": "MMI",
