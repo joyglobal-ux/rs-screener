@@ -29,6 +29,8 @@ def refresh_market(market: str, quick: bool) -> None:
     if not quick or not universe.exists():
         run(str(fetcher))
     run(str(HERE / "compute_returns.py"), "--market", market)
+    if market == "us":  # 산업 ETF 보드는 미국 장 마감 데이터 → US 갱신과 함께
+        run(str(HERE / "compute_etf.py"))
 
 
 def main() -> None:
