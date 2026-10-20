@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RS Screener · 미국·한국 주가상승률 스크리너</title>
+<title>미국·한국 종목 리스트 · 기간별 주가상승률 · RS</title>
 <style>
   :root{
     --bg:#0e1117; --panel:#161b22; --panel2:#1c2230; --border:#2a3140;
@@ -46,7 +46,8 @@
   .tab.active{background:var(--accent2);border-color:var(--accent2);color:#fff}
   .tab .dir{font-size:10px;opacity:.85;margin-left:5px}
 
-  .tablewrap{border:1px solid var(--border);border-radius:10px;overflow-x:auto;background:var(--panel)}
+  /* 표는 자체 스크롤 박스(엑셀의 '틀 고정'처럼): thead의 sticky가 이 박스 상단에 붙어 헤더 행이 항상 보인다 */
+  .tablewrap{border:1px solid var(--border);border-radius:10px;background:var(--panel);overflow:auto;max-height:calc(100vh - 28px)}
   table{border-collapse:collapse;width:100%}
   thead th{position:sticky;top:0;background:var(--panel2);z-index:2;
     text-align:right;padding:9px 10px;font-size:11.5px;color:var(--muted);
@@ -92,8 +93,9 @@
   .gchip .gx:hover{opacity:1;color:var(--neg)}
   .gchip .gedit:hover{color:var(--accent)}
   .gchip.add{border-style:dashed;color:var(--muted)}
-  .gfilter{display:inline-flex;align-items:center;gap:6px;margin-left:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
-  .gfilter input{margin:0;cursor:pointer}
+  .gtarget{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+  .gtarget select{background:var(--panel);color:#f5d98a;border:1px solid #f5c451;border-radius:7px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer}
+  td.star.other{color:#8a7a3a}
   .sorthint{color:var(--muted);font-size:11.5px;margin:-4px 0 14px}
   .sorthint b{color:#9fc1ff;font-weight:600}
   .view-toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px}
@@ -113,6 +115,16 @@
   .modal-bg{position:fixed;inset:0;background:rgba(5,8,14,.78);z-index:50;display:none;
     align-items:center;justify-content:center;padding:24px}
   .modal-bg.open{display:flex}
+  .mhold{margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+  .mhold h3{font-size:12.5px;margin:0 0 8px;color:var(--muted);font-weight:600}
+  .mhold h3 b{color:var(--text)}
+  .mhold .hrow{display:grid;grid-template-columns:72px 1fr 64px 120px;gap:10px;align-items:center;padding:4px 0;font-size:12.5px;border-bottom:1px solid #1b212c}
+  .mhold .hrow .ht{font-weight:700;color:var(--accent)}
+  .mhold .hrow .hn{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mhold .hrow .hp{text-align:right;font-variant-numeric:tabular-nums}
+  .mhold .hbar{height:7px;background:#222a36;border-radius:4px;overflow:hidden}
+  .mhold .hbar i{display:block;height:100%;background:var(--accent)}
+  .mhold .hnote{font-size:11px;color:var(--muted);margin-top:8px}
   .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;
     width:min(1080px,96vw);max-height:92vh;overflow:auto;padding:18px 20px 22px}
   .modal-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
@@ -167,9 +179,10 @@
 <body>
 <div class="wrap">
   <a class="backlink" href="/">← Polaris 허브</a>
+  <a class="backlink" href="strategy.html" style="margin-left:14px">활용 전략 · 백테스트 근거 →</a>
   <header>
-    <h1>Relative-Strength Screener</h1>
-    <span class="sub" id="sub">기간별 주가상승률 + 종합 RS점수</span>
+    <h1>미국·한국 종목 리스트</h1>
+    <span class="sub" id="sub">기간별 주가상승률 · RS점수 · 섹터 · 산업 ETF</span>
     <div class="market-toggle" id="marketToggle">
       <button data-m="us">US</button>
       <button data-m="kr">KR</button>
@@ -253,6 +266,7 @@
       <div class="stat"><div class="lbl">과열도 (Heat)</div><div class="val" id="sHeat">—</div><div class="sub">자기 1년 분포 percentile</div></div>
     </div>
     <canvas id="devChart"></canvas>
+    <div class="mhold" id="mHold" style="display:none"></div>
     <div class="chart-legend">
       <span><i style="background:#5eb3f6"></i>종가</span>
       <span><i style="background:#f5c451"></i>이동평균</span>
@@ -293,9 +307,9 @@ let market="us", page=0, pageSize=100;
 // Sort state: "composite" = avg percentile of `picks` (multi-metric strength);
 // "column" = single direct-value sort on a non-metric column (price, name…).
 let sortMode="composite", picks=["score"], compDir="desc", colKey="score", colDir="desc";
-// Named watchlist groups, per market. groups=[{id,name,t:[tickers]}]; activeGroup
+// Named watchlist groups, per market. groups=[{id,name,t:[tickers]}]; selGroups=보기 필터(다중), starGroup=☆ 대상
 // = a group id (the star-edit target) or "all" (read-only union view).
-let groups=[], activeGroup="all", groupFilter=false;
+let groups=[], selGroups=[], starGroup="";   // selGroups = 보기 필터(다중), starGroup = ☆가 담는 그룹
 let viewMode="stocks", secSortKey="medScore", secSortDir="desc";
 let marketMetaHtml="";
 let secLevel="sector";   // 섹터 RS 뷰 집계 단위: "sector" | "industry" (US 전용)
@@ -426,9 +440,9 @@ function applyFilters(){
   const sec=document.getElementById("sector").value;
   const ind=document.getElementById("industry").value;
   const minCap=parseFloat(document.getElementById("mcap").value)||0;
-  const activeMembers=activeTickerSet();
+  const selMembers=selTickerSet();
   view = rows.filter(r=>{
-    if(groupFilter && !activeMembers.has(r.ticker)) return false;
+    if(selGroups.length && !selMembers.has(r.ticker)) return false;
     if(r.marketCap<minCap) return false;
     if(sec && r.sector!==sec) return false;
     if(ind && (r.industry||"기타")!==ind) return false;
@@ -446,19 +460,21 @@ function render(){
   const empty=document.getElementById("empty");
   if(view.length===0){
     tb.innerHTML="";
-    empty.textContent = groupFilter && activeTickerSet().size===0
-      ? "이 그룹에 종목이 없습니다. 표의 ☆를 눌러 추가하세요."
+    empty.textContent = selGroups.length && selTickerSet().size===0
+      ? "선택한 그룹에 종목이 없습니다. [전체]에서 ☆를 눌러 담으세요."
       : "조건에 맞는 종목이 없습니다.";
     empty.style.display="block"; renderPager(); return;
   }
   empty.style.display="none";
   const start=page*pageSize, slice=view.slice(start,start+pageSize);
-  const gtitle = activeGroup==="all" ? "그룹에 포함됨(전체)" : ("'"+(activeG()?activeG().name:"")+"' 그룹 토글");
+  const tg=targetG();
   let html="";
   slice.forEach((r,i)=>{
     const rank=start+i+1;
-    const on = inActive(r.ticker);
-    let cells=`<td class="star${on?" on":""}" data-tkr="${esc(r.ticker)}" title="${esc(gtitle)}">${on?"★":"☆"}</td>`;
+    const on = inTarget(r.ticker);
+    const others = groups.filter(g=>g!==tg && g.t.includes(r.ticker)).map(g=>g.name);
+    const title = (tg ? `'${tg.name}'에 ${on?"서 빼기":"담기"}` : "관심그룹에 담기") + (others.length ? ` · 다른 그룹: ${others.join(", ")}` : "");
+    let cells=`<td class="star${on?" on":others.length?" other":""}" data-tkr="${esc(r.ticker)}" title="${esc(title)}">${on?"★":"☆"}</td>`;
     cells+=`<td class="rank num">${rank}</td>`;
     cells+=`<td class="l"><span class="tkr chartlink" data-tkr="${esc(r.ticker)}" title="이격도 차트 보기">${r.ticker.replace(/\.(KS|KQ)$/,'')}</span></td>`;
     cells+=`<td class="l name" title="${esc(r.name)}">${esc(r.name)}</td>`;
@@ -756,7 +772,7 @@ function renderEtf(){
     const isB=e.group==="bench";
     const sc=k=>k===etfSortKey?" colsorted":"";
     let c=`<td class="l rank num">${isB?"벤치":e.rank??"—"}</td>`;
-    c+=`<td class="l"><a class="tkr" href="https://finance.yahoo.com/quote/${esc(e.ticker)}" target="_blank" rel="noopener">${esc(e.ticker)}</a></td>`;
+    c+=`<td class="l"><span class="tkr chartlink" data-tkr="${esc(e.ticker)}" title="차트 · 보유종목 보기">${esc(e.ticker)}</span></td>`;
     c+=`<td class="l">${esc(e.label)}</td>`;
     c+=`<td class="l"><span class="grp ${e.group}">${esc(ETF.groups[e.group]||e.group)}</span></td>`;
     c+=`<td class="num">$${e.price.toFixed(2)}</td>`;
@@ -771,6 +787,7 @@ function renderEtf(){
     return `<tr class="${isB?"bench":""}">${c}</tr>`;
   };
   document.getElementById("etf-tbody").innerHTML=bench.map(row).join("")+list.map(row).join("");
+  document.getElementById("etf-tbody").querySelectorAll(".chartlink").forEach(el=>el.onclick=()=>openEtfChart(el.dataset.tkr));
   const above=list.filter(e=>e.dev50!=null&&e.dev50>=0).length;
   document.getElementById("etfhint").innerHTML=
     `<b>${above}/${list.length}</b>개가 50일선 위 · 기본 정렬 = <b>3M RS 순위</b>(SPY 대비 3개월 상대수익) · 헤더 클릭으로 정렬 변경 · 벤치마크 행은 상단 고정`;
@@ -820,42 +837,43 @@ function loadGroups(m){
   const seeded = seedPresets(m, gs);
   groups = gs;
   if(seeded){ try{ localStorage.setItem("rs-groups-"+m, JSON.stringify(groups)); }catch(e){} }
-  let act="all"; try{ act=localStorage.getItem("rs-active-"+m)||""; }catch(e){}
-  // default to the first group (so starring works immediately); "all" only if asked
-  activeGroup = (act==="all" || groups.some(g=>g.id===act)) ? (act||"all")
-              : (groups[0] ? groups[0].id : "all");
+  const ids=new Set(groups.map(g=>g.id));
+  let sel=[]; try{ sel=JSON.parse(localStorage.getItem("rs-sel-"+m)||"[]"); }catch(e){}
+  selGroups = Array.isArray(sel) ? sel.filter(id=>ids.has(id)) : [];
+  let tg=""; try{ tg=localStorage.getItem("rs-target-"+m) || localStorage.getItem("rs-active-"+m) || ""; }catch(e){}  // rs-active = 구버전 키
+  starGroup = ids.has(tg) ? tg : (groups[0] ? groups[0].id : "");
 }
 function saveGroups(){
   try{
     localStorage.setItem("rs-groups-"+market, JSON.stringify(groups));
-    localStorage.setItem("rs-active-"+market, activeGroup);
+    localStorage.setItem("rs-sel-"+market, JSON.stringify(selGroups));
+    localStorage.setItem("rs-target-"+market, starGroup);
   }catch(e){}
 }
-function activeG(){ return groups.find(g=>g.id===activeGroup); }
-function inActive(tkr){
-  if(activeGroup==="all") return groups.some(g=>g.t.includes(tkr));
-  const g=activeG(); return !!g && g.t.includes(tkr);
-}
-function activeTickerSet(){
-  if(activeGroup==="all"){ const s=new Set(); groups.forEach(g=>g.t.forEach(t=>s.add(t))); return s; }
-  const g=activeG(); return new Set(g?g.t:[]);
+function targetG(){ return groups.find(g=>g.id===starGroup); }
+function inTarget(tkr){ const g=targetG(); return !!g && g.t.includes(tkr); }
+function selTickerSet(){
+  const s=new Set();
+  groups.filter(g=>selGroups.includes(g.id)).forEach(g=>g.t.forEach(t=>s.add(t)));
+  return s;
 }
 function toggleStar(tkr){
-  // star edits the active group; if none is selected, make/seed one
-  if(activeGroup==="all"){
-    if(groups.length===0){ groups.push({id:newGid(), name:"관심종목", t:[]}); }
-    activeGroup = groups[0] ? groups[0].id : "all";   // fall into a concrete group
+  // ☆ always edits the target group; create one if none exists
+  if(!targetG()){
+    if(groups.length===0) groups.push({id:newGid(), name:"관심종목", t:[]});
+    starGroup = groups[0].id;
   }
-  const g=activeG(); if(!g) return;
+  const g=targetG();
   const i=g.t.indexOf(tkr);
   if(i>=0) g.t.splice(i,1); else g.t.push(tkr);
   saveGroups();
 }
 function addGroup(){
   const name=(prompt("새 관심그룹 이름 (예: 광통신, 메모리, 소부장)")||"").trim();
-  if(!name) return;
+  if(!name) return null;
   const g={id:newGid(), name, t:[]};
-  groups.push(g); activeGroup=g.id; saveGroups(); refreshView();
+  groups.push(g); starGroup=g.id;            // 새 그룹 = 곧바로 ☆ 담는 대상 (보기 필터는 그대로)
+  saveGroups(); refreshView(); return g;
 }
 function renameGroup(id){
   const g=groups.find(x=>x.id===id); if(!g) return;
@@ -866,31 +884,48 @@ function deleteGroup(id){
   const g=groups.find(x=>x.id===id); if(!g) return;
   if(!confirm(`'${g.name}' 그룹을 삭제할까요? (종목 ${g.t.length}개)`)) return;
   groups=groups.filter(x=>x.id!==id);
-  if(activeGroup===id) activeGroup = groups[0] ? groups[0].id : "all";
+  selGroups=selGroups.filter(x=>x!==id);
+  if(starGroup===id) starGroup = groups[0] ? groups[0].id : "";
   saveGroups(); refreshView();
+}
+function clickGroupChip(id){
+  if(id==="all"){ selGroups=[]; }
+  else if(selGroups.includes(id)){
+    selGroups=selGroups.filter(x=>x!==id);                       // 다시 누르면 해제
+    if(starGroup===id && selGroups.length) starGroup=selGroups[selGroups.length-1];
+  } else {
+    selGroups.push(id); starGroup=id;                           // 누른 탭 = 보기 + ☆ 대상 (여러 개면 마지막 누른 것)
+  }
+  saveGroups(); applyFilters();
 }
 function renderGroups(){
   const el=document.getElementById("groupBar");
   const union=new Set(); groups.forEach(g=>g.t.forEach(t=>union.add(t)));
-  let html=`<div class="gchip ${activeGroup==="all"?"active":""}" data-g="all">전체 <span class="gcnt">${union.size}</span></div>`;
+  const allOn = selGroups.length===0;
+  let html=`<div class="gchip ${allOn?"active":""}" data-g="all" title="필터 해제 — 전 종목 보기">전체 <span class="gcnt">${rows.length}</span></div>`;
   for(const g of groups){
-    const on=g.id===activeGroup;
-    html+=`<div class="gchip ${on?"active":""}" data-g="${g.id}" title="클릭: 선택 · 더블클릭: 이름변경">`+
+    const on=selGroups.includes(g.id);
+    html+=`<div class="gchip ${on?"active":""}" data-g="${g.id}" title="클릭: 이 그룹만 보기(여러 개 겹쳐 선택 가능) · 더블클릭: 이름변경">`+
           `${esc(g.name)} <span class="gcnt">${g.t.length}</span>`+
           (on?`<span class="gx gedit" data-edit="${g.id}" title="이름 변경">✎</span>`+
               `<span class="gx" data-del="${g.id}" title="그룹 삭제">✕</span>`:"")+`</div>`;
   }
   html+=`<div class="gchip add" id="gAdd">+ 새 그룹</div>`;
-  html+=`<label class="gfilter"><input type="checkbox" id="gFilter" ${groupFilter?"checked":""}> 이 그룹만 보기</label>`;
+  html+=`<label class="gtarget" title="표의 ☆를 누르면 이 그룹에 담깁니다 (탭을 누르면 자동으로 바뀜)">⭐ 담을 그룹 `+
+        `<select id="gTarget">${groups.map(g=>`<option value="${g.id}" ${g.id===starGroup?"selected":""}>${esc(g.name)}</option>`).join("")}`+
+        `<option value="__new">＋ 새 그룹…</option></select></label>`;
   el.innerHTML=html;
   el.querySelectorAll(".gchip[data-g]").forEach(c=>{
-    c.onclick=e=>{ if(e.target.dataset.del||e.target.dataset.edit) return; activeGroup=c.dataset.g; saveGroups(); refreshView(); };
+    c.onclick=e=>{ if(e.target.dataset.del||e.target.dataset.edit) return; clickGroupChip(c.dataset.g); };
     c.ondblclick=()=>{ if(c.dataset.g!=="all") renameGroup(c.dataset.g); };
   });
   el.querySelectorAll(".gedit").forEach(x=>x.onclick=e=>{ e.stopPropagation(); renameGroup(x.dataset.edit); });
   el.querySelectorAll(".gx:not(.gedit)").forEach(x=>x.onclick=e=>{ e.stopPropagation(); deleteGroup(x.dataset.del); });
   document.getElementById("gAdd").onclick=addGroup;
-  document.getElementById("gFilter").onchange=e=>{ groupFilter=e.target.checked; applyFilters(); };
+  document.getElementById("gTarget").onchange=e=>{
+    if(e.target.value==="__new"){ if(!addGroup()) renderGroups(); return; }
+    starGroup=e.target.value; saveGroups(); render();
+  };
 }
 
 function setMarket(m){
@@ -957,6 +992,7 @@ async function openChart(tkr){
   document.getElementById("mName").textContent=row.name;
   document.getElementById("mExt").href=MARKETS[market].tickerUrl(row);
   document.getElementById("sHeat").textContent=row.dev&&row.dev.heat!=null?row.dev.heat:"—";
+  document.getElementById("mHold").style.display="none";   // 종목 차트에는 ETF 보유종목 패널 없음
   document.getElementById("modalBg").classList.add("open");
   let ser;
   try{ ser=await loadSeries(market); }
@@ -966,7 +1002,36 @@ async function openChart(tkr){
   chartData={dates: ser.dates.slice(entry.o), closes: entry.c, heat: row.dev&&row.dev.heat};
   drawChart();
 }
-function closeChart(){ document.getElementById("modalBg").classList.remove("open"); chartTkr=null; }
+function closeChart(){ document.getElementById("modalBg").classList.remove("open"); chartTkr=null; document.getElementById("mHold").style.display="none"; }
+async function openEtfChart(tkr){
+  const e=ETF && ETF.etfs.find(x=>x.ticker===tkr); if(!e) return;
+  chartTkr=tkr; chartData=null;
+  document.getElementById("mTicker").textContent=tkr;
+  document.getElementById("mName").textContent=`${e.label} · ${ETF.groups[e.group]||e.group}`+(e.expense!=null?` · 보수 ${e.expense}%`:"");
+  document.getElementById("mExt").href="https://finance.yahoo.com/quote/"+encodeURIComponent(tkr)+"/holdings";
+  document.getElementById("sHeat").textContent="—";
+  // 보유종목 패널
+  const hb=document.getElementById("mHold");
+  const top=e.holdings||[];
+  const inUniv=t=>rows.some(r=>r.ticker===t);
+  hb.innerHTML = top.length
+    ? `<h3>상위 보유종목 <b>${top.length}</b> · 합계 <b>${top.reduce((a,h)=>a+h.pct,0).toFixed(1)}%</b> · ETF 1등 = <b>${esc(top[0].t)}</b> ${esc(top[0].name)}</h3>`+
+      top.map(h=>`<div class="hrow"><span class="ht ${inUniv(h.t)?"chartlink":""}" ${inUniv(h.t)?`data-tkr="${esc(h.t)}" title="종목 차트"`:""}>${esc(h.t)}</span>`+
+        `<span class="hn" title="${esc(h.name)}">${esc(h.name)}</span><span class="hp">${h.pct.toFixed(2)}%</span>`+
+        `<span class="hbar"><i style="width:${Math.min(100,h.pct/Math.max(top[0].pct,1)*100).toFixed(0)}%"></i></span></div>`).join("")+
+      `<div class="hnote">보유 비중은 운용사 최근 공시 기준(갱신 ${ETF.generatedAt.slice(0,10)}) · 파란 티커는 종목 리스트에 있어 클릭하면 종목 차트로 이동 · 전체 구성은 외부차트 ↗</div>`
+    : `<h3>보유종목 정보 없음</h3>`;
+  hb.style.display="";
+  hb.querySelectorAll(".chartlink").forEach(el=>el.onclick=()=>{ if(viewMode!=="stocks"){ setViewMode("stocks"); } openChart(el.dataset.tkr); });
+  document.getElementById("modalBg").classList.add("open");
+  let ser;
+  try{ ser=await loadSeries("etf"); }
+  catch(err){ document.getElementById("sClose").textContent="로드 실패"; return; }
+  const entry=ser.series[tkr];
+  if(!entry){ document.getElementById("sClose").textContent="시계열 없음"; return; }
+  chartData={dates: ser.dates.slice(entry.o), closes: entry.c, heat: null};
+  drawChart();
+}
 function fmtAxis(v){ if(Math.abs(v)>=1e6) return (v/1e6).toFixed(1)+"M"; if(Math.abs(v)>=1e3) return (v/1e3).toFixed(0)+"k"; return v.toFixed(0); }
 
 function drawChart(){

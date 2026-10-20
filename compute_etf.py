@@ -16,13 +16,16 @@ from pathlib import Path
 
 import pandas as pd
 
-from compute_returns import download_chunk, extract_ticker_frame, returns_for
+import yfinance as yf
+
+from compute_returns import download_chunk, extract_ticker_frame, returns_for, write_series
 
 HERE = Path(__file__).parent
 PERIODS = ["1W", "1M", "3M", "6M"]
 RANK_PERIOD = "3M"
 RANK_LOOKBACK_DAYS = 28   # "4주 전" rank snapshot
-LOOKBACK_DAYS = 400       # 6M return dated 4 weeks back + MA50 needs well under this
+LOOKBACK_DAYS = 600       # 6M return dated 4 weeks back + MA50, plus SERIES_DAYS of chart history
+SERIES_DAYS = 380         # trailing closes kept for the modal chart (same as the stock screener)
 BENCH = "SPY"
 
 # (ticker, group, Korean label). Groups drive the filter chips in the UI.
@@ -75,6 +78,26 @@ def ranks(values: dict[str, float | None]) -> dict[str, int | None]:
     return out
 
 
+def fetch_holdings(tickers: list[str]) -> dict[str, dict]:
+    """Current top-10 holdings + expense ratio via yfinance funds_data. Best-effort: a miss leaves []."""
+    out: dict[str, dict] = {}
+    for t in tickers:
+        rec: dict = {"top": [], "expense": None}
+        try:
+            fd = yf.Ticker(t).funds_data
+            th = fd.top_holdings
+            if th is not None and not th.empty:
+                rec["top"] = [{"t": str(sym), "name": str(r["Name"]), "pct": round(float(r["Holding Percent"]) * 100, 2)}
+                              for sym, r in th.head(10).iterrows()]
+            ov = getattr(fd, "fund_overview", None)
+            if isinstance(ov, dict) and ov.get("expenseRatio") is not None:
+                rec["expense"] = round(float(ov["expenseRatio"]) * 100, 2)
+        except Exception as e:  # noqa: BLE001
+            print(f"  holdings miss {t}: {e}", file=sys.stderr)
+        out[t] = rec
+    return out
+
+
 def main() -> None:
     tickers = [t for t, _, _ in UNIVERSE]
     start = (pd.Timestamp.now(tz="UTC").normalize() - pd.Timedelta(days=LOOKBACK_DAYS)).strftime("%Y-%m-%d")
@@ -105,6 +128,9 @@ def main() -> None:
     rank_now = ranks({t: rel(now_r[t][RANK_PERIOD], now_r[BENCH][RANK_PERIOD]) for t in ranked})
     rank_prev = ranks({t: rel(prev_r[t][RANK_PERIOD], prev_r[BENCH][RANK_PERIOD]) for t in ranked})
 
+    holdings = fetch_holdings(tickers)
+    print(f"  holdings: {sum(1 for h in holdings.values() if h['top'])}/{len(tickers)} ETFs", file=sys.stderr)
+
     etfs = []
     for t, g, label in UNIVERSE:
         if t not in closes:
@@ -126,6 +152,8 @@ def main() -> None:
             "rankPrev": rp,
             "rankChg": (rp - rn) if rn is not None and rp is not None else None,  # + = 순위 상승
             "dev50": dev50,
+            "holdings": holdings.get(t, {}).get("top", []),
+            "expense": holdings.get(t, {}).get("expense"),
         })
 
     payload = {
@@ -139,6 +167,18 @@ def main() -> None:
         "groups": GROUPS,
         "etfs": etfs,
     }
+    # chart series (same compact format as series-us.js: shared date axis + per-ticker offset/closes)
+    axis_idx = closes[BENCH].index[-SERIES_DAYS:]
+    axis = [d.strftime("%Y-%m-%d") for d in axis_idx]
+    series = {}
+    for t, c in closes.items():
+        cc = c.reindex(axis_idx)
+        first = int(cc.notna().values.argmax()) if cc.notna().any() else None
+        if first is None:
+            continue
+        series[t] = {"o": first, "c": [round(float(v), 4) if pd.notna(v) else None for v in cc.iloc[first:]]}
+    write_series(HERE / "series-etf.js", "etf", payload["asOf"] if False else as_of.strftime("%Y-%m-%d"), axis, series)
+
     (HERE / "data-etf.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     (HERE / "data-etf.js").write_text(
         "window.SCREENER_DATA_ETF = " + json.dumps(payload, ensure_ascii=False) + ";", encoding="utf-8")

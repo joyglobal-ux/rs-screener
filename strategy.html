@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>활용 전략 · 미국·한국 종목 리스트</title>
+<style>
+  :root{
+    --bg:#0e1117; --panel:#161b22; --panel2:#1c2230; --border:#2a3140;
+    --text:#e6edf3; --muted:#8b949e; --accent:#3b82f6; --accent2:#1f6feb;
+    --pos:#22c55e; --neg:#f87171; --gold:#f5c451;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:13.5px;line-height:1.6}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px 16px 80px}
+  .backlink{display:inline-block;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:10px;margin-right:14px}
+  .backlink:hover{color:var(--accent)}
+  h1{font-size:20px;margin:6px 0 4px;font-weight:700;letter-spacing:-.2px}
+  .lede{color:var(--muted);font-size:13px;margin:0 0 22px}
+  h2{font-size:16px;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--border);font-weight:700}
+  h2 .n{display:inline-block;font-size:11px;color:var(--accent);border:1px solid var(--border);border-radius:6px;padding:1px 7px;margin-right:8px;vertical-align:middle}
+  h3{font-size:13.5px;margin:18px 0 6px;color:var(--text);font-weight:700}
+  p{margin:6px 0}
+  .muted{color:var(--muted)}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+  @media (max-width:760px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .card .k{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+  .card .v{font-size:22px;font-weight:800;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+  .card .s{font-size:12px;color:var(--muted)}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .gold{color:var(--gold)}
+  .verdict{background:#2a2410;border:1px solid #5a4a1a;border-left:4px solid var(--gold);border-radius:10px;padding:12px 16px;margin:12px 0}
+  .verdict b{color:#f5d98a}
+  .warn{background:#2a1515;border:1px solid #5a2a2a;border-left:4px solid var(--neg);border-radius:10px;padding:12px 16px;margin:12px 0}
+  .note{background:#121a2a;border:1px solid #1f3050;border-left:4px solid var(--accent);border-radius:10px;padding:12px 16px;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;text-align:right;padding:8px 10px;white-space:nowrap;font-size:11.5px;border-bottom:1px solid var(--border)}
+  th.l,td.l{text-align:left}
+  td{padding:6px 10px;text-align:right;border-bottom:1px solid #1b212c;white-space:nowrap;font-variant-numeric:tabular-nums}
+  tr.hl td{background:#1c2a1c}
+  tr.bench td{background:#1a1f2b;color:#c9d1d9;font-weight:600}
+  tr.bad td{color:#b08080}
+  .tblwrap{overflow-x:auto;margin:10px 0}
+  canvas{width:100%;height:340px;background:var(--panel);border:1px solid var(--border);border-radius:10px;display:block}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:8px 0 4px}
+  .legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:10px 0}
+  .steps li{counter-increment:s;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px 12px 52px;margin:8px 0;position:relative}
+  .steps li::before{content:counter(s);position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#fff;font-weight:800;display:grid;place-items:center;font-size:13px}
+  .steps li b.t{display:block;font-size:14px;margin-bottom:4px}
+  .steps .ui{display:inline-block;background:#0d1b2e;border:1px solid #1f3a5f;color:#9cc4ff;border-radius:6px;padding:0 7px;font-size:12px;font-weight:600;margin:0 2px}
+  .rule{display:grid;grid-template-columns:150px 1fr;gap:8px 14px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:10px 0}
+  .rule .k{color:var(--muted);font-weight:600}
+  @media (max-width:600px){.rule{grid-template-columns:1fr}}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:760px){.two{grid-template-columns:1fr}}
+  ul.tight{margin:6px 0;padding-left:20px} ul.tight li{margin:3px 0}
+  .small{font-size:12px}
+  details{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 14px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600;color:var(--muted)}
+  .foot{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid var(--border);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="backlink" href="/">← Polaris 허브</a>
+  <a class="backlink" href="index.html">← 종목 리스트</a>
+  <h1>이 리스트로 돈을 버는 법 — 전략과 근거</h1>
+  <p class="lede">두 가지 질문에 숫자로 답한다. ① 산업 ETF에서 최근 성적 좋은 걸 따라 사면 되나? ② 종목 리스트(RS)는 어떻게 써야 수익으로 이어지나?
+    백테스트 기준: <b id="btRange"></b> · ETF 35종(벤치마크 제외) · 분할조정 주가수익률(배당 제외, 리스트와 같은 기준) · 거래비용 편도 5bp.</p>
+
+  <div class="verdict">
+    <b>한 줄 결론.</b> <b>1주·1개월 성적을 따라 사는 건 진다</b> — 월간 리밸런스로 1개월 1등 ETF만 사면 20년 CAGR <b id="c1m1"></b>, 최대낙폭 <b id="m1m1"></b>(SPY는 <span id="cspy"></span> / <span id="mspy"></span>).
+    통하는 건 <b>12개월 상대강도 + 추세 필터</b>(상위 5개, 수익률 0 이하면 현금): CAGR <b id="c12"></b>, 최대낙폭 <b id="m12"></b>. 즉 ETF 보드의 쓸모는 <b>"어느 섹터에 서 있을지"와 "지금 들어가도 되는 장인지"</b>를 정하는 것이지, 그 자체로 돈을 버는 기계가 아니다.
+    돈은 <b>주도 섹터 안의 RS 리더를 돌파 자리에서 사고, 손절은 짧게·추세는 길게</b> 가져가는 데서 나온다 — 그 루틴을 아래 §3에 적었다.
+  </div>
+
+  <h2><span class="n">§1</span>산업 ETF 모멘텀 — 룩백 기간이 전부다</h2>
+  <p>매월 말(또는 매주 금요일) 35개 ETF를 직전 <b>룩백 기간 수익률</b>로 줄 세워 상위 N개를 동일비중으로 사고 다음 리밸런스까지 보유. "추세 필터"는 룩백 수익률이 0 이하인 ETF를 빼고(없으면 현금) 남은 것만 산다.</p>
+  <div class="cards" id="cards1"></div>
+  <div class="legend" id="legend"></div>
+  <canvas id="eq"></canvas>
+  <p class="small muted">로그 스케일 · 월간 리밸런스 · 1.0 = 2007년 1월. 1M·top1(빨강)은 2008~2015년에 반토막이 난 뒤 회복에 10년이 걸렸다.</p>
+
+  <h3>월간 리밸런스 전체 격자</h3>
+  <p class="small muted">룩백 1W / 1M / 3M / 6M / 12M × 상위 1 / 3 / 5개 × 추세 필터 유무. 초록 행 = SPY보다 CAGR이 높고 최대낙폭이 작은 조합. 흐린 행 = SPY보다 CAGR·MDD 모두 나쁜 조합.</p>
+  <div class="tblwrap"><table id="grid1M"></table></div>
+  <details><summary>주간 리밸런스 격자 (더 자주 돌리면 더 나빠진다)</summary><div class="tblwrap"><table id="grid1W"></table></div></details>
+
+  <h3>연도별 수익률 (%)</h3>
+  <div class="tblwrap"><table id="yearly"></table></div>
+
+  <div class="note">
+    <b>왜 이런 결과가 나오나.</b> 1주~1개월 수익률은 <b>평균회귀</b> 성분이 커서(학계의 단기 반전 효과) 지난달 1등은 이번 달 평균 이하가 되기 쉽다. 6~12개월 수익률은 <b>지속</b>한다(모멘텀·산업 모멘텀 효과). 이 리스트의 RS점수가 1M에 10%만 주고 3M·6M·12M에 90%를 주는 이유와 같다.
+    추세 필터가 수익률은 거의 안 바꾸면서 최대낙폭을 <b id="mddDrop"></b> 줄였다 — "오르는 것만 산다"의 효과는 수익이 아니라 <b>생존</b>에서 나온다.
+    <br><b>정직하게 덧붙이면:</b> 위험조정수익(샤프)으로는 60개 조합 중 <b>SPY(0.57)를 넘는 것이 하나도 없다</b>(최고 0.55). ETF 로테이션은 변동성을 더 받고 수익을 조금 더 얻는 거래다. 그래서 이 보드는 "무엇을 살지"가 아니라 <b>"어느 섹터에서 종목을 고를지"</b>를 정하는 용도로만 쓴다.
+  </div>
+
+  <h2><span class="n">§2</span>"1등 ETF의 1등 보유종목" — 구조는 맞고 숫자는 믿지 말 것</h2>
+  <p>같은 방식으로 ETF를 고른 뒤 그 ETF를 사는 대신 <b>현재 1등 보유종목</b>(SMH→NVDA, XLE→XOM, XLV→LLY …)을 사면? 2012년 1월부터 검증.</p>
+  <div class="tblwrap"><table id="top1"></table></div>
+  <div class="warn">
+    <b>이 표는 상한선이지 기대값이 아니다.</b> "오늘의 1등 보유종목"을 과거에 적용했다 — 2012년에 SMH의 1등은 NVDA가 아니었고 XLV의 1등은 LLY가 아니었다. 지금 1등인 종목들은 <b>지난 10년을 이긴 생존자</b>라 이 숫자엔 생존편향이 통째로 들어 있다. 또 ETF 1등이 바뀌면(NXT·SN처럼 상장 전) 그 달은 건너뛰었다.
+    그럼에도 남는 교훈 둘: ① <b>주도 섹터의 주도주</b>라는 구조 자체는 ETF 직접 매수보다 훨씬 큰 수익을 낸다(같은 12M·top3 기준 ETF 직접 매수 <span id="etf12t3"></span> vs 1등 종목 <span id="st12t3"></span>). ② 룩백이 짧으면(1M·3M) 1등 종목 매수는 <b>계좌가 사라지는 수준</b>(MDD −87~−94%)으로 망가진다. 집중할수록 룩백은 길어야 한다.
+    <br>실전에서 "지금의 1등"을 알아내는 도구가 바로 종목 리스트의 <b>RS점수</b>다 — 보유비중 1등이 아니라 <b>상대강도 1등</b>을 사는 것이 편향 없는 버전이다.
+  </div>
+
+  <h2><span class="n">§3</span>전략 — RS 리더 추세추종, 주간 루틴</h2>
+  <p>원칙(헌법 6조)을 이 도구의 버튼으로 번역한 것. 토요일 30분, 월요일 집행. 각 단계에 쓰는 화면·필터를 <span class="ui">이렇게</span> 표시했다.</p>
+  <ol class="steps">
+    <li><b class="t">시장 체온 — 들어가도 되는 장인가</b>
+      <span class="ui">산업 ETF</span> 탭 상단 힌트 "<b>N/35개가 50일선 위</b>"를 본다. <b>18개 이상 = 정상 모드</b>(신규 진입 허용) · <b>12개 미만 = 방어 모드</b>(신규 진입 금지, 보유분은 룰대로만 관리, 현금 늘림). 12~17개는 신규를 절반 사이즈로.
+      <br><span class="muted small">근거: §1에서 추세 필터(=오르는 것만 산다)가 MDD를 −57%→−33%로 줄였다. 개별 종목에 적용하는 가장 단순한 형태가 "장이 꺾이면 새로 안 산다"다.</span></li>
+    <li><b class="t">허용 섹터 — 어디에 서 있을 것인가</b>
+      <span class="ui">산업 ETF</span>에서 헤더 <span class="ui">vs SPY 6M</span>을 눌러 정렬, 상위 5개 + 50일선 위인 ETF가 이번 주 <b>허용 섹터</b>. <span class="ui">순위 급등 TOP 3</span>는 <b>관찰</b>(다음 주 후보)이지 매수 근거가 아니다 — 4주 순위 변화는 아직 검증하지 않았다.
+      <br><span class="muted small">보드엔 12M 컬럼이 없어 6M을 쓴다(§1에서 6M·top5 CAGR 9.7%, SPY 8.9%). 12M 컬럼 추가는 할 일 목록에.</span></li>
+    <li><b class="t">섹터 확인 — 혼자 오르는 종목은 거른다</b>
+      <span class="ui">섹터 RS</span> 탭에서 <b>RS≥90 breadth</b> 상위 섹터를 확인해 2단계와 교집합을 잡는다. 섹터 breadth가 낮은데 혼자 RS 99인 종목은 <b>테마 일회성</b>일 확률이 높다(Jay의 관찰: RS90+ 개별은 차별력 없음, 군집이 신호).</li>
+    <li><b class="t">후보 선별 — 강한데 아직 안 늘어난 자리</b>
+      <span class="ui">종목</span> 탭: 섹터 드롭다운으로 허용 섹터 선택 → 시총 컷(US ≥ $2B / KR ≥ 3,000억) → 정렬 <span class="ui">RS점수</span>. 조건 네 개를 모두 만족하는 종목만 남긴다:
+      <ul class="tight">
+        <li><b>RS점수 ≥ 90</b> — 6~12개월 상대강도 상위 10%</li>
+        <li><b>단기RS ≥ 60</b> — 지금도 움직이고 있는지(식은 리더 제외)</li>
+        <li><b>50일선 위</b>(dev50 &gt; 0) <b>그리고 200일선 위</b></li>
+        <li><b>과열도 ≤ 80</b> — 50일선 이격이 자기 1년 분포 상위 20% 안이면 이미 늘어난 것. 이번 주는 패스, 눌림 후 재검토</li>
+      </ul>
+      남은 5~10개를 <span class="ui">⭐ 담을 그룹</span>을 "이번주 후보"로 두고 별표. 후보 그룹 탭을 누르면 그것만 보인다.</li>
+    <li><b class="t">차트 — 돌파 자리인가</b>
+      후보의 티커를 클릭해 차트를 연다. <b>4~8주 베이스(횡보)</b> 위 <b>피봇 돌파</b>만 산다. 돌파가 이미 <b>+5% 이상 지나갔으면 사지 않는다</b>(추격 금지). 베이스 없이 수직 상승 중인 종목은 과열도가 걸러주지만, 걸러지지 않았어도 사지 않는다.</li>
+    <li><b class="t">집행 — 사이즈와 손절은 같은 주문이다</b>
+      <div class="rule">
+        <span class="k">손절</span><span><b>−8%</b>(변동성 큰 종목은 −7%). 매수 체결과 동시에 <b>시세포착 주문</b> 등록. 손절선은 바꾸지 않는다(7월: 4회 재협상 후 오버라이드 → 최악의 손실).</span>
+        <span class="k">사이즈</span><span>계좌 리스크 <b>1.5%</b> ÷ 손절폭 8% ≈ 포지션 <b>19%</b>. 집중 <b>2~5종목</b>, 합산 노출 <b>100% 상한</b>, 레버리지 없음. 방어 모드에선 신규 0.</span>
+        <span class="k">진입</span><span>돌파 당일 또는 다음날 시가. 불타기는 +5% 이상에서 1회, 사이즈 절반.</span>
+      </div></li>
+    <li><b class="t">보유 관리 — 수익은 길게, 손실은 짧게</b>
+      <div class="rule">
+        <span class="k">청산 신호</span><span><b>50일선 종가 이탈</b>(시스템매매와 같은 룰) 또는 <b>RS점수 &lt; 70 두 주 연속</b>. 둘 중 먼저 오는 것.</span>
+        <span class="k">익절 금지</span><span>+10~20%에서 "작게 먹고 나오기"는 금지(SNDK·LITE·삼성전기: 작은 익절 후 +200~300% 놓침). 예외: 수익 <b>+25% 이상 &amp; 과열도 ≥ 95</b>면 1/3만 익절, 나머지는 50일선 트레일.</span>
+        <span class="k">주간 점검</span><span>토요일에 보유종목 그룹 탭을 눌러 RS점수·단기RS·50일선·과열도를 한 줄로 본다. 숫자가 룰을 건드리면 월요일 집행. 그 외엔 건드리지 않는다.</span>
+      </div></li>
+  </ol>
+
+  <div class="two">
+    <div class="card">
+      <div class="k">하지 말 것 — 백테스트가 말린 것</div>
+      <ul class="tight">
+        <li>1주·1개월 수익률 상위 ETF/종목 추격 (§1: CAGR 1.7%, MDD −68%)</li>
+        <li>RS 99 + 과열도 99 종목 추격 (늘어난 고무줄)</li>
+        <li>방어 모드에서 "이건 다르다"며 신규 진입</li>
+        <li>손절선 재협상, 평단 낮추기용 물타기</li>
+        <li>"순위 급등 TOP 3"를 매수 신호로 사용 (미검증)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="k">헌법과의 대응</div>
+      <ul class="tight">
+        <li><b>미인대회</b> → RS점수·섹터 breadth(시장이 이미 고른 것)</li>
+        <li><b>구조적 변화</b> → 허용 섹터는 6~12M 상대강도로만 (뉴스로 정하지 않음)</li>
+        <li><b>공부와 베팅은 별개</b> → 사이즈·손절이 확신을 대신한다</li>
+        <li><b>정합성</b> → 스토리는 리서치 노트, 숫자는 이 리스트</li>
+        <li><b>집중 &amp; 현금</b> → 2~5종목, 체온으로 현금비중</li>
+        <li><b>수익 길게 손실 짧게</b> → −8% / 50일선 트레일</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span class="n">§4</span>아직 검증 안 된 것 · 다음 할 일</h2>
+  <ul class="tight">
+    <li><b>종목 단계(4~7단계)는 이 페이지에서 백테스트하지 않았다.</b> 리스트의 시계열은 380일뿐이고, 제대로 하려면 <b>시점별 구성종목</b>(상장폐지·편출입 포함)이 필요하다. 지금 룰은 학계 결과(12-1 모멘텀, 산업 모멘텀, 단기 반전)와 §1·§2의 방향, 그리고 Jay의 2026년 실수 복기에서 가져왔다. 다음 작업: US(러셀1000)·KR(KOSPI200+KOSDAQ150) 시점별 유니버스로 "RS≥90 + 50일선 + 과열도" 룰 검증.</li>
+    <li><b>순위 급등(4주 순위 변화)</b>이 선행 신호인지 미검증 — 지금은 관찰용.</li>
+    <li>ETF 보드에 <b>12M 컬럼</b> 추가(현재 6M까지). §1에서 12M이 가장 강했다.</li>
+    <li>체온 임계값(18/12개)은 경험값. 50일선 위 ETF 비율과 이후 1개월 SPY 수익의 관계를 데이터로 캘리브레이션할 것.</li>
+    <li>비용 5bp는 미국 ETF 기준. 한국 종목은 세금·스프레드로 편도 25~30bp라 주간 회전은 더 불리하다.</li>
+  </ul>
+
+  <div class="foot">백테스트 코드: 룩백 수익률 = 리밸런스일 종가 / L거래일 전 종가. 월간 = 월말, 주간 = 금요일 종가. 상위 N 동일비중, 회전분에만 비용 부과. 데이터 yfinance Close(auto_adjust=False), 2007-01 ~ <span id="asOf2"></span>. 숫자는 투자권유가 아니라 Jay의 규칙을 점검하기 위한 기록.</div>
+</div>
+
+<script src="strategy-data.js"></script>
+<script>
+const D=window.STRATEGY_DATA; const $=id=>document.getElementById(id);
+const f1=v=>v==null?"—":(v>0?"+":"")+v.toFixed(1)+"%"; const f0=v=>v==null?"—":(v>0?"+":"")+Math.round(v)+"%";
+const g=(H,L,N,af)=>D.grid.find(x=>x.hold===H&&x.look===L&&x.top===N&&x.absfilter===af);
+const spy=D.bench["SPY_1M"], ew=D.bench["EW35_1M"];
+$("btRange").textContent=D.start+" ~ "+D.asOf; $("asOf2").textContent=D.asOf;
+const a=g("1M","1M",1,false), b=g("1M","12M",5,true), c=g("1M","12M",1,false);
+$("c1m1").textContent=a.cagr+"%"; $("m1m1").textContent=a.mdd+"%"; $("cspy").textContent=spy.cagr+"%"; $("mspy").textContent=spy.mdd+"%";
+$("c12").textContent=b.cagr+"%"; $("m12").textContent=b.mdd+"%";
+$("mddDrop").textContent=`${c.mdd}% → ${b.mdd}%`;
+// cards
+const card=(k,v,s,cls="")=>`<div class="card"><div class="k">${k}</div><div class="v ${cls}">${v}</div><div class="s">${s}</div></div>`;
+$("cards1").innerHTML=
+  card("SPY (기준)",`${spy.cagr}% / ${spy.mdd}%`,`CAGR / 최대낙폭 · 샤프 ${spy.sharpe} · ${spy.mult}배`)+
+  card("1M 1등 추격 (월간)",`${a.cagr}% / ${a.mdd}%`,`샤프 ${a.sharpe} · ${a.mult}배 · 2007~15년 ${f0(a.p1)}`,"neg")+
+  card("12M 상위5 + 추세 (월간)",`${b.cagr}% / ${b.mdd}%`,`샤프 ${b.sharpe} · ${b.mult}배 · 최근 3년 ${f0(b.p3)}`,"pos");
+// grid tables
+function gridTable(H){
+  const bench=[["SPY",D.bench["SPY_"+H]],["35종 동일비중",D.bench["EW35_"+H]]];
+  let h=`<tr><th class="l">룩백</th><th>상위</th><th>추세필터</th><th>CAGR</th><th>변동성</th><th>샤프</th><th>최대낙폭</th><th>배수</th><th>07~15</th><th>16~26</th><th>최근 3년</th></tr>`;
+  for(const [n,v] of bench) h+=`<tr class="bench"><td class="l">${n}</td><td>—</td><td>—</td><td>${v.cagr}%</td><td>${v.vol}%</td><td>${v.sharpe}</td><td>${v.mdd}%</td><td>${v.mult}</td><td>${f0(v.p1)}</td><td>${f0(v.p2)}</td><td>${f0(v.p3)}</td></tr>`;
+  const S=D.bench["SPY_"+H];
+  for(const L of ["1W","1M","3M","6M","12M"]) for(const N of [1,3,5]) for(const af of [false,true]){
+    const r=g(H,L,N,af); if(!r) continue;
+    const good=r.cagr>S.cagr && r.mdd>S.mdd, bad=r.cagr<S.cagr && r.mdd<S.mdd;
+    h+=`<tr class="${good?"hl":bad?"bad":""}"><td class="l"><b>${L}</b></td><td>${N}</td><td>${af?"예":"—"}</td><td><b>${r.cagr}%</b></td><td>${r.vol}%</td><td>${r.sharpe}</td><td>${r.mdd}%</td><td>${r.mult}</td><td>${f0(r.p1)}</td><td>${f0(r.p2)}</td><td>${f0(r.p3)}</td></tr>`;
+  }
+  return h;
+}
+$("grid1M").innerHTML=gridTable("1M"); $("grid1W").innerHTML=gridTable("1W");
+// yearly
+{
+  const Y=D.yearly, keys=Object.keys(Y), years=Object.keys(Y[keys[0]]);
+  let h=`<tr><th class="l">전략</th>${years.map(y=>`<th>${y.slice(2)}</th>`).join("")}</tr>`;
+  for(const k of keys) h+=`<tr class="${k==="SPY"?"bench":""}"><td class="l">${k}</td>${years.map(y=>{const v=Y[k][y];return `<td class="${v>0?"pos":v<0?"neg":""}">${v==null?"—":v}</td>`}).join("")}</tr>`;
+  $("yearly").innerHTML=h;
+}
+// top1 table
+{
+  const R=D.top1.results, S=R.find(r=>r.variant==="SPY_since2012"&&r.hold==="1M");
+  const pick=(L,N,v)=>R.find(r=>r.hold==="1M"&&r.look===L&&r.top===N&&(v?r.variant===v:!r.variant));
+  let h=`<tr><th class="l">룩백 · 상위</th><th colspan="3">ETF 직접 매수</th><th colspan="3">그 ETF의 1등 보유종목 매수</th></tr><tr><th class="l"></th><th>CAGR</th><th>최대낙폭</th><th>샤프</th><th>CAGR</th><th>최대낙폭</th><th>샤프</th></tr>`;
+  h+=`<tr class="bench"><td class="l">SPY (2012~)</td><td>${S.cagr}%</td><td>${S.mdd}%</td><td>${S.sharpe}</td><td colspan="3" class="l muted">월간 리밸런스 · 2012-01 ~ ${D.asOf}</td></tr>`;
+  for(const L of ["1M","3M","6M","12M"]) for(const N of [1,3]){
+    const e=pick(L,N,"etf_since2012"), s=pick(L,N,null); if(!e||!s) continue;
+    h+=`<tr class="${L==="12M"?"hl":(L==="1M"||L==="3M")&&N===1?"bad":""}"><td class="l"><b>${L}</b> · 상위 ${N}</td><td>${e.cagr}%</td><td>${e.mdd}%</td><td>${e.sharpe}</td><td><b>${s.cagr==null?"—":s.cagr+"%"}</b></td><td>${s.mdd}%</td><td>${s.sharpe==null?"—":s.sharpe}</td></tr>`;
+  }
+  $("top1").innerHTML=h;
+  $("etf12t3").textContent=pick("12M",3,"etf_since2012").cagr+"%"; $("st12t3").textContent=pick("12M",3,null).cagr+"%";
+}
+// equity chart (log)
+{
+  const C=D.curves, series=[["SPY","#c9d1d9"],["1M·top1","#f87171"],["12M·top1","#f5c451"],["12M·top5·추세","#22c55e"],["6M·top5·추세","#3b82f6"]];
+  $("legend").innerHTML=series.map(([k,c])=>`<span><i style="background:${c}"></i>${k}</span>`).join("");
+  const cv=$("eq"), dpr=devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  const x0=46,x1=W-14,y0=14,y1=H-28, n=C.dates.length;
+  let lo=Infinity,hi=-Infinity; for(const [k] of series) for(const v of C.curves[k]) if(v>0){lo=Math.min(lo,v);hi=Math.max(hi,v);}
+  const ly=v=>y1-(Math.log(v)-Math.log(lo))/(Math.log(hi)-Math.log(lo))*(y1-y0), lx=i=>x0+i/(n-1)*(x1-x0);
+  ctx.strokeStyle="#2a3140"; ctx.fillStyle="#8b949e"; ctx.font="11px sans-serif"; ctx.textAlign="right";
+  for(const t of [0.25,0.5,1,2,4,8]) if(t>=lo&&t<=hi){ const y=ly(t); ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke(); ctx.fillText(t+"x",x0-6,y+4); }
+  ctx.textAlign="center"; for(let i=0;i<n;i+=24){ ctx.fillText(C.dates[i].slice(0,4),lx(i),H-10); }
+  for(const [k,c] of series){ ctx.strokeStyle=c; ctx.lineWidth=k==="SPY"?1.5:2; ctx.beginPath(); C.curves[k].forEach((v,i)=>{ if(v>0){ const x=lx(i),y=ly(v); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);} }); ctx.stroke(); }
+}
+</script>
+</body>
+</html>
