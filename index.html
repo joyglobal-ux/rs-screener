@@ -341,7 +341,7 @@ const MARKETS = {
     fmtCap: v => v>=1e12 ? (v/1e12).toFixed(1)+"조" : Math.round(v/1e8).toLocaleString()+"억",
     fmtPrice: v => "₩"+Math.round(v).toLocaleString(),
     mcapOptions: [
-      {v:1e11, l:"시총 전체 (≥1,000억)"},
+      {v:0, l:"시총 전체 (≥1,000억 + 지정 종목)"},
       {v:5e11, l:"≥ 5,000억"},
       {v:1e12, l:"≥ 1조"},
       {v:1e13, l:"≥ 10조"},

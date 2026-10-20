@@ -200,7 +200,13 @@ def main() -> None:
     df["Market"] = df["Market"].replace({"KOSDAQ GLOBAL": "KOSDAQ"})
     df = df[df["Market"].isin(["KOSPI", "KOSDAQ"])]
     df = df[df["Name"].apply(is_common_stock)]
-    df = df[df["Marcap"] >= MIN_MARKET_CAP]
+    # pins-kr.json: 시총 컷 아래라도 트래킹하고 싶은 종목은 항상 포함
+    pins: set[str] = set()
+    pin_path = Path(__file__).parent / "pins-kr.json"
+    if pin_path.exists():
+        pins = set(json.loads(pin_path.read_text(encoding="utf-8")).get("codes", []))
+    df = df[(df["Marcap"] >= MIN_MARKET_CAP) | df["Code"].isin(pins)]
+    print(f"  pinned below cap: {sorted(pins & set(df['Code']))}", file=sys.stderr)
     df = df.sort_values("Marcap", ascending=False)
 
     wics = load_or_refresh_wics_map()

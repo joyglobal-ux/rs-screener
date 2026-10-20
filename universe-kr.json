@@ -11770,5 +11770,14 @@
     "industry": "전자부품 제조업",
     "marketCap": 100033460800,
     "market": "KOSDAQ"
+  },
+  {
+    "ticker": "052460.KQ",
+    "krxCode": "052460",
+    "name": "아이크래프트",
+    "sector": "IT서비스",
+    "industry": "컴퓨터 프로그래밍, 시스템 통합 및 관리업",
+    "marketCap": 89692727040,
+    "market": "KOSDAQ"
   }
 ]
