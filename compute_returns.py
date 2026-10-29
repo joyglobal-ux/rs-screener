@@ -26,7 +26,11 @@ import yfinance as yf
 
 HERE = Path(__file__).parent
 
-LOOKBACK_DAYS = 760  # ~520 trading days: covers 1Y returns + MA200 + deviation
+# ~720 trading days: 1Y returns + MA200 + deviation, AND a full 2-year daily chart
+# with its 200-day line / 30-week line drawn from the first bar (scanner.py reuses
+# this download through the OHLCV cache below instead of fetching again).
+LOOKBACK_DAYS = 1050
+CACHE_DIR = HERE / ".cache"          # gitignored; scanner.py reads ohlcv-<market>.pkl
 CHUNK = 100
 PERIOD_KEYS = ["1W", "1M", "3M", "6M", "1Y", "YTD"]
 SERIES_DAYS = 380  # trailing trading days of close kept for the deviation chart
@@ -56,6 +60,7 @@ MARKET_META = {
 def paths_for(market: str) -> dict[str, Path]:
     return {
         "universe": HERE / f"universe-{market}.json",
+        "ohlcv_cache": CACHE_DIR / f"ohlcv-{market}.pkl",
         "data_json": HERE / f"data-{market}.json",
         "data_js": HERE / f"data-{market}.js",
         "series_js": HERE / f"series-{market}.js",
@@ -263,6 +268,16 @@ def write_outputs(payload: dict, paths: dict[str, Path]) -> None:
     )
 
 
+def write_ohlcv_cache(path: Path, market: str, as_of: str | None, ohlcv: dict[str, pd.DataFrame]) -> None:
+    """Persist the raw OHLCV bars so scanner.py can scan setups without a second
+    download. Pickle (not JSON): ~4k tickers × ~720 bars × 5 cols, read back in <2s."""
+    path.parent.mkdir(exist_ok=True)
+    pd.to_pickle({"market": market, "asOf": as_of,
+                  "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                  "lookbackDays": LOOKBACK_DAYS, "ohlcv": ohlcv}, path)
+    print(f"  {path.name}: {len(ohlcv)} tickers cached", file=sys.stderr)
+
+
 def _compact_price(v: float) -> float | int | None:
     if pd.isna(v):
         return None
@@ -347,6 +362,7 @@ def main() -> None:
 
     results: dict[str, dict] = {}
     failed: list[str] = []
+    ohlcv: dict[str, pd.DataFrame] = {}   # raw bars, handed to scanner.py via the cache
     for i in range(0, len(tickers), CHUNK):
         chunk = tickers[i : i + CHUNK]
         single = len(chunk) == 1
@@ -374,6 +390,9 @@ def main() -> None:
                 continue
             clos = sub["Close"].dropna()
             halted = is_halted(clos)
+            if not args.test:
+                cols = [c for c in ("Open", "High", "Low", "Close", "Volume") if c in sub]
+                ohlcv[t] = sub[cols].dropna(subset=["Close"]).astype("float64")
             quality, accel = trend_quality_and_accel(sub["Close"])
             dev = None if halted else deviation_metrics(sub["Close"])
             results[t] = {
@@ -453,6 +472,7 @@ def main() -> None:
         "stocks": stocks,
     }
     write_outputs(payload, paths)
+    write_ohlcv_cache(paths["ohlcv_cache"], args.market, as_of, ohlcv)
     axis_dates, series = build_series(stocks, results)
     write_series(paths["series_js"], args.market, as_of, axis_dates, series)
     print(f"  series-{args.market}.js: {len(series)} stocks × ~{len(axis_dates)}d", file=sys.stderr)

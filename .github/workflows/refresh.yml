@@ -11,7 +11,13 @@ on:
     - cron: "0 11 * * 1-5"    # KR catch-up
     - cron: "30 21 * * 1-5"   # US primary
     - cron: "0 2 * * 2-6"     # US catch-up
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      market:
+        description: "Which market to refresh (manual run)"
+        type: choice
+        default: all
+        options: [all, us, kr]
 
 permissions:
   contents: write
@@ -33,7 +39,12 @@ jobs:
           case "${{ github.event.schedule }}" in
             "0 7 * * 1-5"|"0 11 * * 1-5")    echo "args=--kr" >> "$GITHUB_OUTPUT"; echo "label=KR" >> "$GITHUB_OUTPUT" ;;
             "30 21 * * 1-5"|"0 2 * * 2-6")   echo "args=--us" >> "$GITHUB_OUTPUT"; echo "label=US" >> "$GITHUB_OUTPUT" ;;
-            *)                               echo "args="     >> "$GITHUB_OUTPUT"; echo "label=ALL" >> "$GITHUB_OUTPUT" ;;
+            *)
+              case "${{ github.event.inputs.market }}" in
+                us) echo "args=--us" >> "$GITHUB_OUTPUT"; echo "label=US" >> "$GITHUB_OUTPUT" ;;
+                kr) echo "args=--kr" >> "$GITHUB_OUTPUT"; echo "label=KR" >> "$GITHUB_OUTPUT" ;;
+                *)  echo "args="     >> "$GITHUB_OUTPUT"; echo "label=ALL" >> "$GITHUB_OUTPUT" ;;
+              esac ;;
           esac
 
       - name: Install uv
@@ -62,7 +73,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data-us.js data-us.json universe-us.json series-us.js \
                   data-kr.js data-kr.json universe-kr.json series-kr.js sector_map_kr.json \
-                  data-etf.js data-etf.json series-etf.js
+                  data-etf.js data-etf.json series-etf.js \
+                  groups-us.json setups-us.json setups-history-us.json \
+                  groups-kr.json setups-kr.json setups-history-kr.json
           if git diff --staged --quiet; then
             echo "No data changes."
           else

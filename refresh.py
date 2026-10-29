@@ -29,6 +29,8 @@ def refresh_market(market: str, quick: bool) -> None:
     if not quick or not universe.exists():
         run(str(fetcher))
     run(str(HERE / "compute_returns.py"), "--market", market)
+    # 그룹판·셋업 스캔 — compute_returns가 남긴 OHLCV 캐시(.cache/)를 재사용한다.
+    run(str(HERE / "scanner.py"), "--market", market)
     # 산업 ETF 보드는 미국(vs SPY)·국내(vs KODEX 200) 두 묶음을 각자 최신 마감으로 받는다 →
     # 어느 시장을 갱신하든 함께 돌린다 (ETF별 lastDate·묶음별 asOf를 payload에 기록).
     run(str(HERE / "compute_etf.py"))
