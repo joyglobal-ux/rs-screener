@@ -300,6 +300,9 @@ def build_groups(market: str, ohlcv: dict[str, pd.DataFrame], universe: list[dic
     tickers = list(dict.fromkeys(idx_tickers + [u[0] for u in etf_rows] + extra))
     log(f"  groups: downloading {len(tickers)} index/ETF series since {start}")
     frames = download_frames(tickers, start)
+    # 데이터 기준일(as_of) 이후 봉은 버린다 — 장중에 돌려도 카드가 종목 리스트·셋업과 같은 날짜로 맞춰진다.
+    cut = pd.Timestamp(as_of)
+    frames = {t: f[f.index <= cut] for t, f in frames.items() if (f.index <= cut).any()}
     bench_t = BENCH[market]
     bench = frames[bench_t]["Close"] if bench_t in frames else None
     if bench is None:
