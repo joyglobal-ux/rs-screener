@@ -256,6 +256,31 @@
   .st-more[open] summary::before{content:"▼ "}
   .st-more .st-grid{padding:0 12px 12px}
   .st-none{color:var(--muted);font-size:12px;padding:6px 0 2px}
+  /* 군집 표 · 한 줄 리스트 (카드 정책 2026-10-30) */
+  .st-clu{margin:18px 0 6px;border:1px solid var(--border);border-radius:10px;background:var(--panel);overflow-x:auto}
+  .st-clu table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .st-clu th{color:var(--muted);font-weight:600;padding:7px 8px;border-bottom:1px solid var(--border);font-size:11px;text-align:center;line-height:1.3}
+  .st-clu th:first-child,.st-clu td:first-child{text-align:left}
+  .st-clu th.core,.st-clu td.core{background:rgba(245,196,81,.04)}
+  .st-clu td{padding:5px 8px;text-align:center;border-bottom:1px solid rgba(255,255,255,.04);color:var(--muted)}
+  .st-clu td.n1{color:var(--text)} .st-clu td.n3{color:#f5d98a;font-weight:700;background:rgba(245,196,81,.12)} .st-clu td.n5{color:#ffb4a2;font-weight:800;background:rgba(255,120,80,.18)}
+  .st-clu td.g{color:var(--text);font-weight:600} .st-clu td.g.top{color:#f5d98a}
+  .st-clu td.tot{color:var(--text);font-weight:700;border-left:1px solid var(--border)}
+  .st-clu .nb{display:inline-block;min-width:16px}
+  .st-clu td .nw{color:#86efac;font-size:10px;margin-left:2px}
+  .st-rows{display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--border);border-radius:10px;background:var(--panel);margin:6px 0 10px;overflow:hidden}
+  .st-row{display:grid;grid-template-columns:92px minmax(120px,1.4fr) minmax(90px,1fr) 56px 54px minmax(140px,2fr) 128px;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid #1b212c;font-size:12px}
+  .st-row:last-child{border-bottom:none}
+  .st-row .tkr{font-size:13px}
+  .st-row .nm{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .st-row .gp{color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .st-row .rs{font-variant-numeric:tabular-nums}
+  .st-row .tg{color:#cdb36a;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .st-row .why{color:var(--muted);font-size:10.5px;text-align:right;white-space:nowrap}
+  .st-row .st-star{font-size:14px}
+  @media (max-width:760px){.st-row{grid-template-columns:80px 1fr 50px 60px;font-size:11.5px} .st-row .gp,.st-row .tg,.st-row .why{display:none}}
+  .st-sub2{font-size:12.5px;font-weight:700;margin:12px 0 4px;color:var(--muted)}
+  .st-sub2 b{color:var(--text)}
   .st-scan .use{color:#cdb36a;font-weight:400;font-size:11.5px;flex-basis:100%;line-height:1.5}
   .st-scan .use b{color:#f5d98a}
   .st-rules{margin:0 0 14px;border:1px solid #5a4a1a;border-left:4px solid var(--gold,#f5c451);border-radius:10px;background:#2a2410}
@@ -398,6 +423,7 @@
     <div class="st-bar">
       <select id="stMcap"></select>
       <label class="watch-label"><input type="checkbox" id="stTop5"> 그룹판 3개월 상대 상위 5 그룹만</label>
+      <label class="watch-label" id="stRsL"><input type="checkbox" id="stRs"> RS점수 ≥ 70 <span class="cnt">(바닥 탈출은 대신 주간 거래량 ≥ 1.5배)</span></label>
       <span class="st-cnt" id="stCount"></span>
     </div>
     <div id="stBody"></div>
@@ -1082,7 +1108,7 @@ async function renderGroupBoard(){
 const TF_LBL={d:"일봉 2년",w:"주봉 5년",m:"월봉 10년"};
 const TF_CAP={d:"일봉 2년 · 회색 50일선 · 주황 200일선 · 보라 RS(지수 대비) · 아래 거래량",w:"주봉 5년 · 회색 10주선 · 주황 30주선 · 로그 눈금 · 마지막 봉은 이번 주(진행 중)",m:"월봉 10년 · 주황 10개월선 · 로그 눈금 · 마지막 봉은 이번 달(진행 중)"};
 const SEC_LBL={d:["일봉","8~20일을 내다보는 차트"],w:["주봉","8~20주를 내다보는 차트"],m:["월봉","8~20개월을 내다보는 차트"]};
-let stTf={}, stTop5=false, stMcapMin=0;
+let stTf={}, stTop5=true, stRs=true, stMcapMin=0;   // 기본값 = 교집합 (2026-10-30 운영 원칙 1)
 const ST_DRAWN=new Map();           // canvas → {tkr, sid}
 function stGroupTop5(){
   if(!GP) return null;
@@ -1151,7 +1177,8 @@ function stCard(st,sid,isNew){
 function stMetaHtml(){
   if(!ST) return marketMetaHtml;
   const tot=ST.scans.reduce((a,s)=>a+s.total,0), nw=ST.scans.reduce((a,s)=>a+s.new,0);
-  return `<b>셋업 · ${market.toUpperCase()}</b> · 기준일 <b>${ST.asOf}</b> · <b>${ST.scannedTickers.toLocaleString()}</b>종목 스캔 → 히트 <b>${tot}</b> (오늘 새로 <b>${nw}</b>) · 스캔당 카드 최대 ${ST.maxPerScan}개(오늘 새로 → RS점수 순) · `+
+  const cd=ST.cards||{};
+  return `<b>셋업 · ${market.toUpperCase()}</b> · 기준일 <b>${ST.asOf}</b> · <b>${ST.scannedTickers.toLocaleString()}</b>종목 스캔 → 히트 <b>${tot}</b> (오늘 새로 <b>${nw}</b>) · 카드 = 핵심 4스캔(바닥 탈출·갭 상승·베이스 돌파·52주 신고가)의 '오늘 새로'만, 종목당 1장 · 차트는 ${cd.chartCap||"—"}종목까지(오늘 새로 → 필터 통과 → RS 순) · `+
     `<span title="${ST.generatedAt}">갱신 ${ST.generatedAt.slice(0,10)}</span>${ST.firstRun?" · <b>첫 실행</b>: 이력이 없어 발생일=오늘인 것만 '오늘 새로'":""}<br>`+
     `주봉·월봉 조건은 매일 재평가(진행 중인 주·달 포함) · 이벤트는 되돌아보기 창(일 ${ST.windows.d}·주 ${ST.windows.w}·월 ${ST.windows.m} 거래일) 안에서 찾고 유지 조건(선 위 등)이 살아 있는 동안 남는다 · RS = 종목 리스트의 RS점수 · 실적일 = yfinance(미국만)`;
 }
@@ -1173,31 +1200,74 @@ async function renderSetups(){
   const t5=document.getElementById("stTop5");
   t5.checked=stTop5 && !!top5; t5.disabled=!top5;
   t5.parentElement.title = top5 ? "그룹판 3개월 상대수익 상위 5: "+[...top5].join(", ") : "그룹판 데이터 없음";
-  const pass=st=>{
-    if(st.marketCap!=null && st.marketCap<stMcapMin) return false;
-    if(stTop5 && top5 && !(st.group && top5.has(st.group))) return false;
-    return true;
-  };
-  let html="", shownNew=0, shownAll=0;
-  for(const tf of ["d","w","m"]){
-    const scans=s.scans.filter(x=>x.tf===tf);
-    const secNew=scans.reduce((a,x)=>a+x.hits.filter(t=>s.stocks[t]&&s.stocks[t].scans[x.id].isNew&&pass(s.stocks[t])).length,0);
-    html+=`<h2 class="st-sec">${SEC_LBL[tf][0]}<span>${SEC_LBL[tf][1]} · 오늘 새로 ${secNew}장</span></h2>`;
-    for(const sc of scans){
-      const hits=sc.hits.map(t=>s.stocks[t]).filter(st=>st&&pass(st));
-      const nw=hits.filter(st=>st.scans[sc.id].isNew), old=hits.filter(st=>!st.scans[sc.id].isNew);
-      shownNew+=nw.length; shownAll+=hits.length;
-      html+=`<div class="st-scan">${esc(sc.label)}<span class="cnt">오늘 새로 <b>${sc.new}</b> · 전체 ${sc.total}${sc.shown<sc.total?` · 카드 ${sc.shown}개(RS점수 순)`:""}</span><span class="rule">${esc(sc.rule)}</span>${(sc.use||SCAN_USE[sc.id])?`<span class="use">쓰는 법 · ${esc(sc.use||SCAN_USE[sc.id])}</span>`:""}</div>`;
-      if(!hits.length){ html+=`<div class="st-none">${sc.total?"필터(시총·그룹)에 걸려 보이는 카드 없음":"없음"}</div>`; continue; }
-      if(nw.length) html+=`<div class="st-grid">${nw.map(st=>stCard(st,sc.id,true)).join("")}</div>`;
-      if(old.length) html+=`<details class="st-more"><summary>그 밖에 ${old.length}개 — 오늘 카드에서 빠진 것·${tf==="d"?"며칠 전":tf==="w"?"이번 주(앞서)":"이번 달(앞서)"}에 먼저 걸린 것</summary><div class="st-grid">${old.map(st=>stCard(st,sc.id,false)).join("")}</div></details>`;
+  const rsL=document.getElementById("stRs"); rsL.checked=stRs;
+  const cd=s.cards||{core:["bottom_escape","gap_up","base_breakout","high_52w"],rsFloor:70,bottomVolx:1.5};
+  const CORE=cd.core;
+  const passCap=st=> !(st.marketCap!=null && st.marketCap<stMcapMin);
+  const passRs=st=>{ if(!stRs) return true; if(st.rep==="bottom_escape"){ const wv=st.scans.bottom_escape.stats.weekVolx; return wv!=null && wv>=cd.bottomVolx; } return (st.score||0)>=cd.rsFloor; };
+  const passTop=st=> !(stTop5 && top5) || (st.group && top5.has(st.group));
+  const all=Object.values(s.stocks);
+  const groupName=g=>{ if(!g) return "—"; if(market==="kr") return g; const c=GP&&GP.cards.find(c=>c.id===g); return c?`${c.name} ${g}`:g; };
+  // 1) 오늘 새로 카드 — 핵심 스캔별, 종목당 1장(대표 스캔), 필터 통과분만
+  let html="", nCards=0, nRows=0, noChart=[];
+  const others=[];   // 그 밖에 (한 줄 리스트) — [st, sid, why]
+  html+=`<h2 class="st-sec">오늘 새로<span>핵심 4스캔 · 종목당 1장 · 필터 통과분 · 카드 하단 숫자 = 손절선 재료</span></h2>`;
+  for(const sid of CORE){
+    const sc=s.scans.find(x=>x.id===sid); if(!sc) continue;
+    const mine=all.filter(st=>st.rep===sid);
+    const cards=[], rows=[];
+    for(const st of mine){
+      const r=st.scans[sid];
+      if(!passCap(st)) continue;
+      if(!r.isNew){ others.push([st,sid,"먼저 걸림 "+r.eventDate.slice(5).replace("-","/")]); continue; }
+      if(!passTop(st)){ others.push([st,sid,"상위 5 그룹 밖"]); continue; }
+      if(!passRs(st)){ others.push([st,sid,sid==="bottom_escape"?"주간 거래량 부족":"RS<"+cd.rsFloor]); continue; }
+      if(st.d) cards.push(st); else rows.push(st);
     }
+    cards.sort((a,b)=>(b.score||0)-(a.score||0));
+    html+=`<div class="st-scan">${esc(sc.label)}<span class="cnt">카드 <b>${cards.length+rows.length}</b> · 오늘 새로 ${sc.new} · 전체 ${sc.total}</span><span class="rule">${esc(sc.rule)}</span>${(sc.use||SCAN_USE[sid])?`<span class="use">쓰는 법 · ${esc(sc.use||SCAN_USE[sid])}</span>`:""}</div>`;
+    if(!cards.length && !rows.length){ html+=`<div class="st-none">${sc.new?"오늘 새로 "+sc.new+"건이 필터(상위 5 그룹·RS·시총)에 걸려 카드 없음 — 아래 '그 밖에'에 있음":"오늘 새로 없음"}</div>`; continue; }
+    if(cards.length) html+=`<div class="st-grid">${cards.map(st=>stCard(st,sid,true)).join("")}</div>`;
+    if(rows.length) html+=`<div class="st-sub2">차트 상한 밖 <b>${rows.length}</b> (티커 클릭 → 모달 차트)</div>`+stRows(rows.map(st=>[st,sid,""]));
+    nCards+=cards.length; nRows+=rows.length;
   }
-  document.getElementById("stCount").innerHTML=`보이는 카드 <b>${shownAll}</b> · 오늘 새로 <b>${shownNew}</b>`;
+  // 2) 군집 표 — 그룹 × 스캔 히트 수 (필터 무관, 시총만)
+  const byG={};
+  for(const st of all){ if(!passCap(st)) continue; const g=st.group||"(미분류)"; const row=byG[g]||(byG[g]={g, n:0, nw:0, c:{}, w:{}});
+    for(const sid of Object.keys(st.scans)){ row.c[sid]=(row.c[sid]||0)+1; if(st.scans[sid].isNew) row.w[sid]=(row.w[sid]||0)+1; } row.n=Object.values(row.c).reduce((a,b)=>a+b,0); row.nw=Object.values(row.w).reduce((a,b)=>a+b,0); }
+  const grows=Object.values(byG).sort((a,b)=>b.n-a.n);
+  const cls=v=> v>=5?"n5":v>=3?"n3":v>=1?"n1":"";
+  html+=`<h2 class="st-sec">군집 표<span>그룹 × 스캔 히트 수(되돌아보기 창 안 전체, 필터 무관) · <b style="color:#f5d98a">3건 이상</b>이면 섹터가 도는 중 → 그룹판 칩 확인 · 괄호 = 오늘 새로</span></h2>`;
+  html+=`<div class="st-clu"><table><thead><tr><th>그룹</th>${s.scans.map(x=>`<th class="${x.core?"core":""}" title="${esc(x.rule)}">${esc(x.label.replace(" · 30주선과 12주 고점 돌파",""))}<br><span style="font-weight:400">${SEC_LBL[x.tf][0]}</span></th>`).join("")}<th>합계</th></tr></thead><tbody>`;
+  for(const r of grows){ const isTop=top5&&top5.has(r.g);
+    html+=`<tr><td class="g ${isTop?"top":""}" title="${isTop?"그룹판 3개월 상대 상위 5":""}">${esc(groupName(r.g))}${isTop?" ★":""}</td>`+
+      s.scans.map(x=>{ const v=r.c[x.id]||0, w=r.w[x.id]||0; return `<td class="${cls(v)} ${x.core?"core":""}"><span class="nb">${v||"·"}</span>${w?`<span class="nw">+${w}</span>`:""}</td>`; }).join("")+
+      `<td class="tot">${r.n}${r.nw?`<span class="nw">+${r.nw}</span>`:""}</td></tr>`; }
+  html+=`</tbody></table></div>`;
+  // 3) 그 밖에 — 카드가 아닌 모든 히트를 한 줄로 (핵심 스캔의 과거·필터 탈락 + 비핵심 스캔만 걸린 종목)
+  for(const st of all){ if(!passCap(st)) continue; if(st.rep) continue;
+    const sid=s.scans.map(x=>x.id).find(id=>st.scans[id]); const r=st.scans[sid];
+    others.push([st,sid,(r.isNew?"오늘 새로":"먼저 걸림 "+r.eventDate.slice(5).replace("-","/"))+" · 군집용"]); }
+  const bySid={}; for(const o of others){ (bySid[o[1]]||(bySid[o[1]]=[])).push(o); }
+  const nOther=others.length;
+  html+=`<details class="st-more"><summary>그 밖에 ${nOther}개 — 핵심 스캔의 먼저 걸린 것·필터 탈락 + 이평 돌파·26주 신고가만 걸린 것 (한 줄씩, 티커 클릭 → 모달 차트)</summary><div style="padding:0 12px 12px">`;
+  for(const x of s.scans){ const list=bySid[x.id]; if(!list||!list.length) continue;
+    list.sort((a,b)=>(b[0].score||0)-(a[0].score||0));
+    html+=`<div class="st-sub2">${esc(x.label)} <b>${list.length}</b>${!x.core&&(SCAN_USE[x.id]||x.use)?` <span style="font-weight:400">· ${esc((x.use||SCAN_USE[x.id]).split("。")[0].slice(0,60))}</span>`:""}</div>`+stRows(list); }
+  html+=`</div></details>`;
+  document.getElementById("stCount").innerHTML=`카드 <b>${nCards}</b>${nRows?` + 차트 없는 ${nRows}`:""} · 그 밖에 ${nOther}`;
   body.innerHTML=html;
   ST_DRAWN.clear();
-  body.querySelectorAll(".st-grid:not(details .st-grid) canvas").forEach(cv=>stDraw(cv));
-  body.querySelectorAll("details.st-more").forEach(d=>d.addEventListener("toggle",()=>{ if(d.open) d.querySelectorAll("canvas").forEach(cv=>{ if(!ST_DRAWN.has(cv)) stDraw(cv); }); }));
+  body.querySelectorAll(".st-grid canvas").forEach(cv=>stDraw(cv));
+}
+function stRows(list){
+  return `<div class="st-rows">`+list.map(([st,sid,why])=>{ const r=st.scans[sid]; const on=inTarget(st.ticker);
+    const tags=st.tags.filter(x=>x!==sid).map(x=>SCAN_LBL[x]||x).join(" · ");
+    return `<div class="st-row"><span><span class="tkr chartlink" data-tkr="${esc(st.ticker)}">${esc(etfCode(st.ticker))}</span> <span class="st-star${on?" on":""}" data-tkr="${esc(st.ticker)}">${on?"★":"☆"}</span></span>`+
+      `<span class="nm" title="${esc(st.name)}">${esc(st.name)}</span><span class="gp">${esc(market==="kr"?(st.group||"—"):(st.group||"—"))}</span>`+
+      `<span class="rs" title="RS점수 / 단기RS">${st.score??"—"}<span style="color:var(--muted)">/${st.scoreShort??"—"}</span></span>`+
+      `<span class="rs ${pctClass(st.chg1D)}">${st.chg1D==null?"—":(st.chg1D>=0?"+":"")+st.chg1D.toFixed(1)+"%"}</span>`+
+      `<span class="tg" title="${esc(tags)}">${esc(tags)||"—"}</span><span class="why">${esc(why)}</span></div>`; }).join("")+`</div>`;
 }
 // ---------- 스캔별 성과 패널 (setups-stats-<m>.json · scanner.py track_events) ----------
 // 각 히트는 영구 로그(setups-events)에 한 번만 적히고, 카드가 처음 보인 날 종가를 기준으로 5·10·20거래일 후 성과가 채워진다.
@@ -1678,6 +1748,7 @@ function init(){
   });
   document.getElementById("stMcap").addEventListener("change", e=>{ stMcapMin=parseFloat(e.target.value)||0; renderSetups(); });
   document.getElementById("stTop5").addEventListener("change", e=>{ stTop5=e.target.checked; renderSetups(); });
+  document.getElementById("stRs").addEventListener("change", e=>{ stRs=e.target.checked; renderSetups(); });
   ETF = window.SCREENER_DATA_ETF || null;
   if(!ETF) document.getElementById("etfBtn").style.display="none";
   let saved="us"; try{ saved=localStorage.getItem("rs-market")||"us"; }catch(e){}

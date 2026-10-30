@@ -73,7 +73,17 @@ THRESH = {
     "min_bars": 260,         # 1년 미만 상장은 스캔하지 않음 (52주 고점·26주 비교 불가)
 }
 WINDOW = {"d": 10, "w": 15, "m": 22}   # 이벤트를 찾는 되돌아보기 거래일 수 (일봉 / 주봉 / 월봉 스캔)
-MAX_PER_SCAN = 24                      # 카드 상한 (오늘 새로 → RS점수 순), 나머지는 total에만 — US 셋업 json ≈ 6MB(gzip 전) 선
+# 카드 정책(2026-10-30): 스캔은 넓게 잡아 전부 기록하되(성과 추적용), 카드는 좁게 보여준다.
+#   · 핵심 4스캔(CORE)에 걸린 종목만 카드, 종목당 1장(대표 스캔 = CORE 순서), 나머지 스캔은 태그.
+#   · 이평 돌파 3종은 카드 없이 '그룹 × 스캔 군집 표'와 한 줄 리스트로만.
+#   · 차트(2y 일봉·5y 주봉·10y 월봉)는 CHART_CAP 종목까지: 오늘 새로 → 기본 필터 통과 → RS점수 순. 나머지는 한 줄 리스트.
+#   · 기본 필터(UI 토글, 여기 상수를 json으로 전달): 그룹판 3개월 상대 상위 5 그룹 ∩ RS점수 ≥ RS_FLOOR
+#     (바닥 탈출은 RS 면제 대신 이번 주 거래량 ≥ BOTTOM_VOLX 배).
+CORE = ["bottom_escape", "gap_up", "base_breakout", "high_52w"]
+CHART_CAP = 90
+RS_FLOOR = 70
+BOTTOM_VOLX = 1.5
+TOP_GROUPS = 5
 HISTORY_DAYS = 20                      # setups-history 보관 거래일 수
 DAILY_BARS = 504                       # 2년 일봉
 WEEKLY_YEARS, MONTHLY_YEARS = 5, 10
@@ -545,8 +555,17 @@ def load_history(path: Path) -> dict:
     return {"runs": {}}
 
 
+def top_groups(groups: dict | None) -> set[str]:
+    """Group ids (KR: group name, US: ETF ticker) of the TOP_GROUPS best 3M-relative groups — same rule as the UI toggle."""
+    if not groups:
+        return set()
+    cards = [c for c in groups["cards"] if c["kind"] == "group" and c.get("rel3M") is not None]
+    cards.sort(key=lambda c: -c["rel3M"])
+    return {c["id"].replace("kr:", "", 1) for c in cards[:TOP_GROUPS]}
+
+
 def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict], group_of: dict[str, str],
-                 as_of: str, extra: bool) -> dict:
+                 as_of: str, extra: bool, top5: set[str] | None = None) -> dict:
     t0 = time.time()
     meta = {s["ticker"]: s for s in stocks}
     hits: dict[str, dict[str, dict]] = {}
@@ -589,24 +608,32 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
     hist_path.write_text(json.dumps({"market": market, "asOf": as_of, "runs": runs}, ensure_ascii=False, separators=(",", ":")),
                          encoding="utf-8")
 
-    # one card per ticker per timeframe: primary scan by SCANS order, the rest become tags
+    # representative scan per ticker (CORE order) → card; non-core-only tickers → cluster table / list only
+    rep_of: dict[str, str | None] = {t: next((c for c in CORE if c in res), None) for t, res in hits.items()}
     scan_entries: list[dict] = []
-    shown_tickers: set[str] = set()
-    primary_of: dict[tuple[str, str], str] = {}
-    for t, res in hits.items():
-        for tf in ("d", "w", "m"):
-            ids = [sid for sid, _tf, *_ in SCANS if _tf == tf and sid in res]
-            if ids:
-                primary_of[(t, tf)] = ids[0]
     for sid, tf, label, rule, use in SCANS:
-        members = [t for t in hits if primary_of.get((t, tf)) == sid]
-        members.sort(key=lambda t: (not hits[t][sid]["isNew"], -(meta[t].get("score") or 0), -(meta[t].get("marketCap") or 0)))
-        shown = members[:MAX_PER_SCAN]
-        shown_tickers.update(shown)
-        scan_entries.append({"id": sid, "tf": tf, "label": label, "rule": rule, "use": use,
-                             "total": len(members), "new": sum(1 for t in members if hits[t][sid]["isNew"]),
-                             "shown": len(shown), "hits": shown})
-        log(f"    {tf} {sid:14s} total {len(members):4d} · new {sum(1 for t in members if hits[t][sid]['isNew']):3d} · shown {len(shown)}")
+        members = sorted((t for t in hits if sid in hits[t]), key=lambda t: -(meta[t].get("score") or 0))
+        new_n = sum(1 for t in members if hits[t][sid]["isNew"])
+        scan_entries.append({"id": sid, "tf": tf, "label": label, "rule": rule, "use": use, "core": sid in CORE,
+                             "total": len(members), "new": new_n, "hits": members})
+        log(f"    {tf} {sid:14s} total {len(members):4d} · new {new_n:3d}{'  (card)' if sid in CORE else ''}")
+
+    def qualifies(t: str) -> bool:
+        """Default UI filter: top-5 group ∩ (RS ≥ floor, or bottom-escape with weekly volume ≥ BOTTOM_VOLX)."""
+        if top5 and group_of.get(t) not in top5:
+            return False
+        r = rep_of[t]
+        if r == "bottom_escape":
+            wv = hits[t][r]["stats"].get("weekVolx")
+            return wv is not None and wv >= BOTTOM_VOLX
+        return (meta[t].get("score") or 0) >= RS_FLOOR
+
+    card_tickers = [t for t in hits if rep_of[t]]
+    card_tickers.sort(key=lambda t: (not hits[t][rep_of[t]]["isNew"], not qualifies(t), -(meta[t].get("score") or 0)))
+    shown_tickers: set[str] = set(card_tickers[:CHART_CAP])
+    n_new = sum(1 for t in card_tickers if hits[t][rep_of[t]]["isNew"])
+    n_q = sum(1 for t in card_tickers if hits[t][rep_of[t]]["isNew"] and qualifies(t))
+    log(f"  setups: {len(hits)} hit tickers → {len(card_tickers)} core (new {n_new}, new∩filter {n_q}) · charts for {len(shown_tickers)} (cap {CHART_CAP})")
 
     # bars for the shown tickers
     bench_t = BENCH[market]
@@ -634,7 +661,7 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
             log(f"  setups: earnings dates for {sum(1 for v in earnings.values() if v)}/{len(tl)} in {time.time()-t1:.1f}s")
 
     stocks_out: dict[str, dict] = {}
-    for t in sorted(shown_tickers):
+    for t in sorted(hits):
         s, df = meta[t], ohlcv[t]
         res = hits[t]
         rec = {
@@ -645,8 +672,10 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
             "group": group_of.get(t), "earnings": earnings.get(t),
             "scans": res,
             "tags": [sid for sid, *_ in SCANS if sid in res],
-            "d": pack_bars(df, bench, (50, 200), DAILY_BARS, axis),
+            "rep": rep_of[t], "q": qualifies(t),
         }
+        if t in shown_tickers:
+            rec["d"] = pack_bars(df, bench, (50, 200), DAILY_BARS, axis)
         if t in weekly_frames:
             wf = weekly_frames[t]
             rec["w"] = pack_bars(wf, bench, (10, 30), WEEKLY_YEARS * 52 + 1, bar_end=pd.Timedelta(days=4))
@@ -658,7 +687,9 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
     return {
         "market": market, "asOf": as_of, "bench": bench_t,
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "thresholds": THRESH, "windows": WINDOW, "maxPerScan": MAX_PER_SCAN,
+        "thresholds": THRESH, "windows": WINDOW,
+        "cards": {"core": CORE, "chartCap": CHART_CAP, "rsFloor": RS_FLOOR, "bottomVolx": BOTTOM_VOLX,
+                  "topGroups": TOP_GROUPS, "top5": sorted(top5) if top5 else []},
         "scannedTickers": scanned, "firstRun": first_run,
         "axis": axis,
         "scans": scan_entries,
@@ -881,15 +912,18 @@ def main() -> None:
     log(f"scanner {m.upper()} asOf {as_of}")
 
     group_of: dict[str, str] = {}
+    groups = None
     if args.only != "setups":
         groups, group_of = build_groups(m, ohlcv, universe, as_of)
         (HERE / f"groups-{m}.json").write_text(json.dumps(groups, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         log(f"  wrote groups-{m}.json ({len(groups['cards'])} cards)")
     else:
+        gp = HERE / f"groups-{m}.json"
+        groups = json.loads(gp.read_text(encoding="utf-8")) if gp.exists() else None
         for u in universe:
             group_of[u["ticker"]] = kr_group_of(u.get("sector") or "") if m == "kr" else (us_group_of(u.get("sector") or "", u.get("industry") or "") or "")
     if args.only != "groups":
-        setups = build_setups(m, ohlcv, data["stocks"], group_of, as_of, extra=not args.no_extra)
+        setups = build_setups(m, ohlcv, data["stocks"], group_of, as_of, extra=not args.no_extra, top5=top_groups(groups))
         out = HERE / f"setups-{m}.json"
         out.write_text(json.dumps(setups, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         log(f"  wrote {out.name} ({out.stat().st_size/1e6:.1f} MB · {len(setups['stocks'])} tickers with charts)")
