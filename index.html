@@ -256,6 +256,14 @@
   .st-more[open] summary::before{content:"▼ "}
   .st-more .st-grid{padding:0 12px 12px}
   .st-none{color:var(--muted);font-size:12px;padding:6px 0 2px}
+  .st-scan .use{color:#cdb36a;font-weight:400;font-size:11.5px;flex-basis:100%;line-height:1.5}
+  .st-scan .use b{color:#f5d98a}
+  .st-rules{margin:0 0 14px;border:1px solid #5a4a1a;border-left:4px solid var(--gold,#f5c451);border-radius:10px;background:#2a2410}
+  .st-rules summary{cursor:pointer;padding:9px 14px;color:#f5d98a;font-size:12.5px;font-weight:700;list-style:none}
+  .st-rules summary::before{content:"▶ ";font-size:10px}
+  .st-rules[open] summary::before{content:"▼ "}
+  .st-rules ol{margin:0;padding:0 16px 12px 34px;font-size:12.5px;line-height:1.7;color:#e6d9b0}
+  .st-rules li b{color:#f5d98a}
 
   .pager{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;color:var(--muted);font-size:12px}
   .pager button{background:var(--panel);border:1px solid var(--border);color:var(--text);
@@ -346,6 +354,17 @@
   </div>
 
   <div id="setupsview" style="display:none">
+    <details class="st-rules">
+      <summary>셋업 카드 운영 원칙 (2026-10-30 합의) — 카드는 매수 신호가 아니라 "오늘 어디를 볼지" 정하는 후보 생성기</summary>
+      <ol>
+        <li><b>교집합만 본다.</b> "그룹판 3개월 상대 상위 5 그룹만" 토글을 기본으로 켠다. RS 90 개별 종목은 차별력이 없고 <b>군집</b>이 신호 — 허용 섹터 밖의 카드는 테마 일회성일 확률이 높다.</li>
+        <li><b>카드 하단 숫자는 손절선 재료다.</b> 갭일 저가·피봇·30주선 값이 그대로 시세포착 주문 가격. "좋다"에서 끝나면 매매가 아니다 — 투자일지 엔트리(사이즈·손절·시나리오 3줄·반대논리)가 써져야 매매.</li>
+        <li><b>매일 5분, 결정은 토요일.</b> 매일은 '오늘 새로'만 훑고 ☆로 후보 그룹에 담는 것까지. 집행은 주간 루틴(활용 전략 §3)에서.</li>
+        <li><b>하지 말 것:</b> 카드가 많다고 노출 늘리기(7월의 "물 들어올 때 노 저어야지") · 지수 칩에 주▼가 떠 있는 방어 모드에서 셋업 보고 진입 · 임계값 풀어 카드 늘리기 · '오늘 새로' 숫자에 끌려가기.</li>
+        <li><b>스캔별로 다르게 쓴다.</b> 각 스캔 제목 아래 노란 줄이 그 스캔의 쓰는 법. 바닥 탈출이 가장 값지고, 갭 상승은 정보, 200일선·30주선·10개월선은 군집으로만, 신고가는 보유 점검용.</li>
+        <li><b>검증 전이다.</b> 임계값은 상수이고 한 건도 백테스트되지 않았다. 스캔별 20거래일 후 성과가 쌓이면(성과 패널) 남길 스캔과 버릴 스캔을 데이터로 정한다.</li>
+      </ol>
+    </details>
     <div class="st-bar">
       <select id="stMcap"></select>
       <label class="watch-label"><input type="checkbox" id="stTop5"> 그룹판 3개월 상대 상위 5 그룹만</label>
@@ -1069,6 +1088,17 @@ function stAnnot(st,sid,tf){   // dashed reference line for the chart (only on t
   return null;
 }
 let SCAN_TF_OF={}, SCAN_LBL={};
+// 스캔별 쓰는 법 (2026-10-30 Jay 합의). scanner.py SCANS의 use와 같은 문구 — json에 없어도 보이도록 여기에도 둔다.
+const SCAN_USE={
+  gap_up:"갭은 정보지 매수 신호가 아니다. 갭 당일 추격 금지 → 갭일 저가 지키며 3~10일 횡보 → 그 고점 돌파에 진입, 손절 = 갭일 저가. 52주 고점 −5% 이내에서 터진 갭이 바닥 갭보다 낫다.",
+  ma200_cross:"단독 매수 근거 아님. 같은 그룹에서 같은 날 3장 이상 뜨면 섹터 전환 신호 → 그룹판에서 칩이 따라오는지 확인. 혼자 뜬 한 장은 무시.",
+  base_breakout:"오닐 피봇. '피봇 위 +N%'가 5%를 넘으면 끝난 카드(추격 금지). 거래량은 본인 기준 2배 이상만. 손절 = 피봇 −8%, 매수와 동시에 시세포착 주문.",
+  high_26w:"신규 진입 리스트가 아니라 보유 점검용. 내 보유 종목이 아직 리더인가, 리더 명단이 바뀌었나.",
+  bottom_escape:"가장 값진 스캔(2단계 시작, 가장 길게 탈 수 있는 자리). RS는 낮은 게 정상이니 RS≥90 대신 '그룹판 상위 그룹 소속 + 이번 주 거래량 1.5배 이상'을 요구. 거래량 없는 바닥 탈출은 반등일 뿐. 손절 = 30주선 종가 이탈.",
+  ma30w_reclaim:"추세 전환 관찰용. 군집으로만 쓴다 — 같은 그룹 여러 장이면 섹터가 도는 중, 한 장이면 노이즈.",
+  high_52w:"보유 점검 + 리더 명단. 여기서 새로 사지 않는다(추격). 보유 종목이 이 목록에서 빠지면 50일선·RS 룰 점검.",
+  ma10m_cross:"가장 느린 시계. 단독 진입 X. 바닥 탈출·리클레임과 겹치는 종목은 긴 추세의 시작일 수 있으니 후보 그룹에 담아 관찰.",
+};
 function stTfOf(st,sid){ const own=SCAN_TF_OF[sid], want=stTf[st.ticker]||own; return st[want]?want:(st[own]?own:"d"); }
 function stCard(st,sid,isNew){
   const tf=stTfOf(st,sid);
@@ -1126,7 +1156,7 @@ async function renderSetups(){
       const hits=sc.hits.map(t=>s.stocks[t]).filter(st=>st&&pass(st));
       const nw=hits.filter(st=>st.scans[sc.id].isNew), old=hits.filter(st=>!st.scans[sc.id].isNew);
       shownNew+=nw.length; shownAll+=hits.length;
-      html+=`<div class="st-scan">${esc(sc.label)}<span class="cnt">오늘 새로 <b>${sc.new}</b> · 전체 ${sc.total}${sc.shown<sc.total?` · 카드 ${sc.shown}개(RS점수 순)`:""}</span><span class="rule">${esc(sc.rule)}</span></div>`;
+      html+=`<div class="st-scan">${esc(sc.label)}<span class="cnt">오늘 새로 <b>${sc.new}</b> · 전체 ${sc.total}${sc.shown<sc.total?` · 카드 ${sc.shown}개(RS점수 순)`:""}</span><span class="rule">${esc(sc.rule)}</span>${(sc.use||SCAN_USE[sc.id])?`<span class="use">쓰는 법 · ${esc(sc.use||SCAN_USE[sc.id])}</span>`:""}</div>`;
       if(!hits.length){ html+=`<div class="st-none">${sc.total?"필터(시총·그룹)에 걸려 보이는 카드 없음":"없음"}</div>`; continue; }
       if(nw.length) html+=`<div class="st-grid">${nw.map(st=>stCard(st,sc.id,true)).join("")}</div>`;
       if(old.length) html+=`<details class="st-more"><summary>그 밖에 ${old.length}개 — 오늘 카드에서 빠진 것·${tf==="d"?"며칠 전":tf==="w"?"이번 주(앞서)":"이번 달(앞서)"}에 먼저 걸린 것</summary><div class="st-grid">${old.map(st=>stCard(st,sc.id,false)).join("")}</div></details>`;

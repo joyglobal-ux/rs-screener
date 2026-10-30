@@ -83,15 +83,23 @@ INDEX_CARDS = {
     "kr": [("^KS11", "코스피"), ("^KQ11", "코스닥")],
 }
 
-SCANS = [  # id, timeframe, label, one-line rule
-    ("gap_up", "d", "거래량 터진 갭 상승", f"시가 갭 ≥ +{THRESH['gap_pct']:.0f}% · 거래량 ≥ 20일 평균 {THRESH['gap_volx']:.0f}배 · 고가권(상위 1/3) 마감"),
-    ("ma200_cross", "d", "200일선 돌파", f"어제 200일선 아래 → 오늘 위 · 거래량 ≥ {THRESH['cross_volx']}배"),
-    ("base_breakout", "d", "베이스 돌파", f"{THRESH['base_days']}일 고가 돌파 · 베이스 폭 ≤ {THRESH['base_range_max']:.0f}% · 거래량 ≥ {THRESH['cross_volx']}배 · 50일선 위"),
-    ("high_26w", "d", "26주 신고가", "26주 종가 신고가(어제는 아님) · 평균 이상 거래량 · 52주 신고가면 주봉 쪽"),
-    ("bottom_escape", "w", "바닥 탈출 · 30주선과 12주 고점 돌파", f"최근 26주 중 ≥{THRESH['bottom_below_weeks']}주 30주선 아래 → 이번 주 종가가 30주선과 12주 고점을 동시에 상회"),
-    ("ma30w_reclaim", "w", "30주선 리클레임", f"직전 8주 중 ≥{THRESH['reclaim_below_weeks']}주 30주선 아래 → 30주선 위로 복귀"),
-    ("high_52w", "w", "52주 신고가", "52주 종가 신고가(어제는 아님)"),
-    ("ma10m_cross", "m", "10개월선 돌파", f"직전 6개월 중 ≥{THRESH['month_below_months']}개월 10개월선 아래 → 10개월선 위로"),
+SCANS = [  # id, timeframe, label, one-line rule, how Jay uses it (shown under the scan title)
+    ("gap_up", "d", "거래량 터진 갭 상승", f"시가 갭 ≥ +{THRESH['gap_pct']:.0f}% · 거래량 ≥ 20일 평균 {THRESH['gap_volx']:.0f}배 · 고가권(상위 1/3) 마감",
+     "갭은 정보지 매수 신호가 아니다. 갭 당일 추격 금지 → 갭일 저가 지키며 3~10일 횡보 → 그 고점 돌파에 진입, 손절 = 갭일 저가. 52주 고점 −5% 이내에서 터진 갭이 바닥 갭보다 낫다."),
+    ("ma200_cross", "d", "200일선 돌파", f"어제 200일선 아래 → 오늘 위 · 거래량 ≥ {THRESH['cross_volx']}배",
+     "단독 매수 근거 아님. 같은 그룹에서 같은 날 3장 이상 뜨면 섹터 전환 신호 → 그룹판에서 칩이 따라오는지 확인. 혼자 뜬 한 장은 무시."),
+    ("base_breakout", "d", "베이스 돌파", f"{THRESH['base_days']}일 고가 돌파 · 베이스 폭 ≤ {THRESH['base_range_max']:.0f}% · 거래량 ≥ {THRESH['cross_volx']}배 · 50일선 위",
+     "오닐 피봇. '피봇 위 +N%'가 5%를 넘으면 끝난 카드(추격 금지). 거래량은 본인 기준 2배 이상만. 손절 = 피봇 −8%, 매수와 동시에 시세포착 주문."),
+    ("high_26w", "d", "26주 신고가", "26주 종가 신고가(어제는 아님) · 평균 이상 거래량 · 52주 신고가면 주봉 쪽",
+     "신규 진입 리스트가 아니라 보유 점검용. 내 보유 종목이 아직 리더인가, 리더 명단이 바뀌었나."),
+    ("bottom_escape", "w", "바닥 탈출 · 30주선과 12주 고점 돌파", f"최근 26주 중 ≥{THRESH['bottom_below_weeks']}주 30주선 아래 → 이번 주 종가가 30주선과 12주 고점을 동시에 상회",
+     "가장 값진 스캔(2단계 시작, 가장 길게 탈 수 있는 자리). RS는 낮은 게 정상이니 RS≥90 대신 '그룹판 상위 그룹 소속 + 이번 주 거래량 1.5배 이상'을 요구. 거래량 없는 바닥 탈출은 반등일 뿐. 손절 = 30주선 종가 이탈."),
+    ("ma30w_reclaim", "w", "30주선 리클레임", f"직전 8주 중 ≥{THRESH['reclaim_below_weeks']}주 30주선 아래 → 30주선 위로 복귀",
+     "추세 전환 관찰용. 군집으로만 쓴다 — 같은 그룹 여러 장이면 섹터가 도는 중, 한 장이면 노이즈."),
+    ("high_52w", "w", "52주 신고가", "52주 종가 신고가(어제는 아님)",
+     "보유 점검 + 리더 명단. 여기서 새로 사지 않는다(추격). 보유 종목이 이 목록에서 빠지면 50일선·RS 룰 점검."),
+    ("ma10m_cross", "m", "10개월선 돌파", f"직전 6개월 중 ≥{THRESH['month_below_months']}개월 10개월선 아래 → 10개월선 위로",
+     "가장 느린 시계. 단독 진입 X. 바닥 탈출·리클레임과 겹치는 종목은 긴 추세의 시작일 수 있으니 후보 그룹에 담아 관찰."),
 ]
 SCAN_TF = {s[0]: s[1] for s in SCANS}
 
@@ -584,12 +592,12 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
             ids = [sid for sid, _tf, *_ in SCANS if _tf == tf and sid in res]
             if ids:
                 primary_of[(t, tf)] = ids[0]
-    for sid, tf, label, rule in SCANS:
+    for sid, tf, label, rule, use in SCANS:
         members = [t for t in hits if primary_of.get((t, tf)) == sid]
         members.sort(key=lambda t: (not hits[t][sid]["isNew"], -(meta[t].get("score") or 0), -(meta[t].get("marketCap") or 0)))
         shown = members[:MAX_PER_SCAN]
         shown_tickers.update(shown)
-        scan_entries.append({"id": sid, "tf": tf, "label": label, "rule": rule,
+        scan_entries.append({"id": sid, "tf": tf, "label": label, "rule": rule, "use": use,
                              "total": len(members), "new": sum(1 for t in members if hits[t][sid]["isNew"]),
                              "shown": len(shown), "hits": shown})
         log(f"    {tf} {sid:14s} total {len(members):4d} · new {sum(1 for t in members if hits[t][sid]['isNew']):3d} · shown {len(shown)}")
