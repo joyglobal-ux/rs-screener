@@ -74,8 +74,8 @@ jobs:
           git add data-us.js data-us.json universe-us.json series-us.js \
                   data-kr.js data-kr.json universe-kr.json series-kr.js sector_map_kr.json \
                   data-etf.js data-etf.json series-etf.js \
-                  groups-us.json setups-us.json setups-history-us.json \
-                  groups-kr.json setups-kr.json setups-history-kr.json
+                  groups-us.json setups-us.json setups-history-us.json setups-events-us.json setups-stats-us.json \
+                  groups-kr.json setups-kr.json setups-history-kr.json setups-events-kr.json setups-stats-kr.json
           if git diff --staged --quiet; then
             echo "No data changes."
           else

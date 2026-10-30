@@ -28,7 +28,9 @@ Two products per market (--market us|kr):
    An event found inside its lookback window stays listed while its hold rule
    is still true (e.g. still above the 30-week line). setups-history-<m>.json
    remembers when each (ticker, scan, event) was first seen so the UI can split
-   "오늘 새로" from "그 밖에". Hit tickers get 2y daily / 5y weekly / 10y monthly
+   "오늘 새로" from "그 밖에". setups-events-<m>.json is the permanent append-only log of
+   every hit (entry = close on the day the card was first seen) with 5/10/20-day
+   outcomes, and setups-stats-<m>.json the per-scan summary for the '스캔별 성과' panel. Hit tickers get 2y daily / 5y weekly / 10y monthly
    bars (weekly+monthly are extra yfinance calls for hits only), an RS line vs
    the market index, RS scores from data-<m>.json and (US) the next earnings date.
 
@@ -52,8 +54,7 @@ import pandas as pd
 import yfinance as yf
 
 import compute_etf
-from compute_returns import (CACHE_DIR, LOOKBACK_DAYS, MARKET_META, download_chunk,
-                             extract_ticker_frame, is_halted)
+from compute_returns import (CACHE_DIR, LOOKBACK_DAYS, MARKET_META, download_chunk, is_halted)
 
 HERE = Path(__file__).parent
 
@@ -236,7 +237,12 @@ def download_frames(tickers: list[str], start: str, interval: str = "1d") -> dic
         if df is None or df.empty:
             continue
         for t in chunk:
-            sub = extract_ticker_frame(df, t, len(chunk) == 1)
+            # yfinance(group_by="ticker")는 종목이 하나여도 (ticker, field) 2단 컬럼을 준다 → 단일 종목(벤치마크)도 level-0으로 꺼낸다.
+            # (예전 single=True 경로는 2단 컬럼을 그대로 돌려줘 "Close"를 못 찾았고, 그래서 RS 라인·벤치마크가 조용히 빠졌다.)
+            if isinstance(df.columns, pd.MultiIndex):
+                sub = df[t] if t in df.columns.get_level_values(0) else None
+            else:
+                sub = df if len(chunk) == 1 else None
             if sub is None or "Close" not in sub:
                 continue
             sub = sub[[c for c in ("Open", "High", "Low", "Close", "Volume") if c in sub]].dropna(subset=["Close"])
@@ -607,6 +613,8 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
     bstart = (pd.Timestamp.now(tz="UTC").normalize() - pd.DateOffset(years=MONTHLY_YEARS + 1)).strftime("%Y-%m-%d")
     bframes = download_frames([bench_t], bstart)
     bench = bframes[bench_t]["Close"] if bench_t in bframes else None
+    # 성과 추적: 영구 이벤트 로그 + 사후 수익률 + 스캔별 집계 (setups-events / setups-stats)
+    track_events(market, hits, meta, group_of, ohlcv, bench, as_of, runs)
     axis_set: set = set()
     for t in shown_tickers:
         axis_set.update(ohlcv[t].tail(DAILY_BARS).index)
@@ -656,6 +664,176 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
         "scans": scan_entries,
         "stocks": stocks_out,
     }
+
+
+# ----------------------------------------------------------------------------- 셋업 성과 추적
+# setups-events-<m>.json : 히트 이벤트 영구 로그(append-only; (ticker, scan, eventDate) 당 한 번). 매 실행 때 OHLCV 캐시로
+#                          5·10·20거래일 후 수익률 · MFE/MAE · 손절 가정 이탈 여부를 채운다(20거래일이 차면 status=done, 이후 고정).
+# setups-stats-<m>.json  : 스캔별 집계(건수 · 승률 · 평균/중앙 · 지수 대비 초과 · 손절 이탈률) — 셋업 탭 '스캔별 성과' 패널.
+# 기준(entry) = 카드가 처음 '보인' 날(seen)의 종가. 첫 실행이 되돌아보기 창에서 과거 이벤트를 찾을 때는 유지 조건이 살아 있는 것만
+# 보이므로(생존 편향) 발생일 종가가 아니라 보인 날 종가에서 재기 시작한다. 평소에는 seen == eventDate.
+HORIZONS = (5, 10, 20)        # 거래일 후 지평 — 마지막 값(20)이 '완료' 기준
+MIN_SAMPLE = 30               # 완료 표본이 이보다 적으면 '표본 부족'
+STOP_RULES = {                # scan → (level, mult, label). fixed = 이벤트 시점 기준가×mult 아래 종가 / 그 외 = 매일 다시 계산한 선 아래 종가
+    "gap_up": ("fixed", 1.0, "갭일 저가 종가 이탈"),
+    "ma200_cross": ("ma200", 1.0, "200일선 종가 이탈"),
+    "base_breakout": ("fixed", 0.92, "피봇 −8% 종가 이탈"),
+    "high_26w": ("fixed", 0.92, "돌파 고점 −8% 종가 이탈"),
+    "bottom_escape": ("sma30w", 1.0, "30주선 종가 이탈"),
+    "ma30w_reclaim": ("sma30w", 1.0, "30주선 종가 이탈"),
+    "high_52w": ("fixed", 0.92, "돌파 고점 −8% 종가 이탈"),
+    "ma10m_cross": ("sma10m", 1.0, "10개월선 종가 이탈"),
+}
+REF_STAT = {"base_breakout": "pivot", "high_26w": "prevHigh", "high_52w": "prevHigh", "ma200_cross": "ma200",
+            "bottom_escape": "sma30", "ma30w_reclaim": "sma30", "ma10m_cross": "sma10m"}   # gap_up → 갭일 저가(OHLCV)
+
+
+def line_series(df: pd.DataFrame, kind: str) -> np.ndarray:
+    """매일 평가한 이평선(scan_frame과 같은 정의): ma200 / 30주선(완결 29주 + 오늘) / 10개월선(완결 9개월 + 오늘)."""
+    cs, idx = df["Close"], df.index
+    c = cs.to_numpy(dtype="float64")
+    if kind == "ma200":
+        return cs.rolling(200).mean().to_numpy(dtype="float64")
+    if kind == "sma30w":
+        wc = cs.groupby(idx.to_period("W-FRI")).last()
+        return (_week_map(wc.rolling(29).sum().shift(1), idx) + c) / 30
+    if kind == "sma10m":
+        mc = cs.groupby(idx.to_period("M")).last()
+        return (_month_map(mc.rolling(9).sum().shift(1), idx) + c) / 10
+    raise ValueError(kind)
+
+
+def _bench_at(bench: pd.Series | None, ts) -> float | None:
+    if bench is None:
+        return None
+    v = bench.asof(ts)
+    return float(v) if pd.notna(v) else None
+
+
+def event_outcome(e: dict, df: pd.DataFrame, line: np.ndarray | None, bench: pd.Series | None) -> dict | None:
+    """seen일 종가(entry) 기준 5·10·20거래일 후 수익률, MFE/MAE, 손절 가정 이탈. 분할 조정에 안전하도록 entry·기준가는 매번 현재 데이터로 다시 잡는다."""
+    idx = df.index
+    i0 = int(idx.searchsorted(pd.Timestamp(e["seen"])))
+    if i0 >= len(idx):
+        return None
+    c, h, l = (df[k].to_numpy(dtype="float64") for k in ("Close", "High", "Low"))
+    entry = c[i0]
+    if not np.isfinite(entry) or entry <= 0:
+        return None
+    H = HORIZONS[-1]
+    j1 = min(i0 + H, len(idx) - 1)
+    days = j1 - i0
+    out: dict = {"days": days, "status": "done" if days >= H else "open", "last": rnd(c[j1], 2), "lastDate": idx[j1].strftime("%Y-%m-%d")}
+    b0 = _bench_at(bench, idx[i0])
+    for N in HORIZONS:
+        if days >= N:
+            r = pct(c[i0 + N], entry)
+            out[f"r{N}"] = r
+            bN = _bench_at(bench, idx[i0 + N])
+            br = pct(bN, b0) if bN is not None and b0 is not None else None
+            out[f"x{N}"] = round(r - br, 2) if r is not None and br is not None else None
+        else:
+            out[f"r{N}"] = out[f"x{N}"] = None
+    if days > 0:
+        out["mfe"] = pct(float(np.nanmax(h[i0 + 1:j1 + 1])), entry)
+        out["mae"] = pct(float(np.nanmin(l[i0 + 1:j1 + 1])), entry)
+    else:
+        out["mfe"] = out["mae"] = None
+    kind, mult, _ = STOP_RULES[e["scan"]]
+    out["stop"], out["stopDay"], out["rStop"] = False, None, None
+    for j in range(i0 + 1, j1 + 1):
+        level = e["refRel"] * entry * mult if kind == "fixed" else (line[j] if line is not None else np.nan)
+        if np.isfinite(level) and c[j] < level:
+            out["stop"], out["stopDay"], out["rStop"] = True, j - i0, pct(c[j], entry)
+            break
+    return out
+
+
+def _agg(evs: list[dict]) -> dict:
+    done = [e for e in evs if e.get("status") == "done"]
+    row: dict = {"n": len(evs), "done": len(done), "open": len(evs) - len(done), "lowSample": len(done) < MIN_SAMPLE}
+    for N in HORIZONS:
+        rs = [e[f"r{N}"] for e in evs if e.get(f"r{N}") is not None]
+        xs = [e[f"x{N}"] for e in evs if e.get(f"x{N}") is not None]
+        row[f"n{N}"] = len(rs)
+        row[f"win{N}"] = round(100 * sum(1 for r in rs if r > 0) / len(rs), 1) if rs else None
+        row[f"avg{N}"] = round(float(np.mean(rs)), 2) if rs else None
+        row[f"med{N}"] = round(float(np.median(rs)), 2) if rs else None
+        row[f"x{N}"] = round(float(np.mean(xs)), 2) if xs else None
+        row[f"xwin{N}"] = round(100 * sum(1 for x in xs if x > 0) / len(xs), 1) if xs else None
+        row[f"bench{N}"] = round(float(np.mean([e[f"r{N}"] - e[f"x{N}"] for e in evs if e.get(f"x{N}") is not None])), 2) if xs else None
+    mfe = [e["mfe"] for e in done if e.get("mfe") is not None]
+    mae = [e["mae"] for e in done if e.get("mae") is not None]
+    row["mfe"] = round(float(np.mean(mfe)), 2) if mfe else None
+    row["mae"] = round(float(np.mean(mae)), 2) if mae else None
+    stopped = [e for e in done if e.get("stop")]
+    row["stopRate"] = round(100 * len(stopped) / len(done), 1) if done else None
+    row["stopAvg"] = round(float(np.mean([e["rStop"] for e in stopped if e.get("rStop") is not None])), 2) if stopped else None
+    return row
+
+
+def track_events(market: str, hits: dict[str, dict[str, dict]], meta: dict[str, dict], group_of: dict[str, str],
+                 ohlcv: dict[str, pd.DataFrame], bench: pd.Series | None, as_of: str, runs: dict[str, list]) -> None:
+    ev_path, st_path = HERE / f"setups-events-{market}.json", HERE / f"setups-stats-{market}.json"
+    data = load_history(ev_path) if ev_path.exists() else {}
+    events: list[dict] = data.get("events") or []
+    known = {(e["ticker"], e["scan"], e["eventDate"]) for e in events}
+    floor = min(runs) if runs else as_of          # 이력이 시작된 날 이전엔 카드를 본 적이 없다
+    added = 0
+    for t, res in hits.items():
+        df = ohlcv[t]
+        idx = df.index
+        c, l = df["Close"].to_numpy(dtype="float64"), df["Low"].to_numpy(dtype="float64")
+        for sid, r in res.items():
+            key = (t, sid, r["eventDate"])
+            if key in known:
+                continue
+            seen = max(r.get("firstSeen") or as_of, floor)
+            ie = int(idx.searchsorted(pd.Timestamp(r["eventDate"])))
+            i0 = min(int(idx.searchsorted(pd.Timestamp(seen))), len(idx) - 1)
+            entry = c[i0]
+            ref = l[ie] if sid == "gap_up" else r["stats"].get(REF_STAT[sid])
+            if not np.isfinite(entry) or entry <= 0 or ref is None or not np.isfinite(ref) or ref <= 0:
+                continue
+            events.append({
+                "ticker": t, "name": meta[t].get("name"), "scan": sid, "eventDate": r["eventDate"],
+                "seen": idx[i0].strftime("%Y-%m-%d"), "lag": i0 - ie,
+                "close": rnd(c[ie], 2), "entry": rnd(entry, 2), "ref": rnd(float(ref), 2), "refRel": round(float(ref) / entry, 6),
+                "group": group_of.get(t), "score": meta[t].get("score"),
+            })
+            known.add(key)
+            added += 1
+    line_cache: dict[tuple[str, str], np.ndarray] = {}
+    updated = 0
+    for e in events:
+        if e.get("status") == "done":
+            continue                              # 20거래일이 찬 이벤트는 고정
+        df = ohlcv.get(e["ticker"])
+        if df is None:
+            continue                              # 상폐·유니버스 이탈: 마지막 값 유지
+        kind = STOP_RULES[e["scan"]][0]
+        line = None if kind == "fixed" else line_cache.setdefault((e["ticker"], kind), line_series(df, kind))
+        o = event_outcome(e, df, line, bench)
+        if o:
+            e.update(o)
+            updated += 1
+    events.sort(key=lambda e: (e["seen"], e["scan"], e["ticker"]))
+    ev_path.write_text(json.dumps({"market": market, "asOf": as_of, "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                                   "events": events}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    done = sum(1 for e in events if e.get("status") == "done")
+    stats = {
+        "market": market, "asOf": as_of, "bench": BENCH[market], "benchLabel": "코스피" if market == "kr" else "S&P 500 (SPY)",
+        "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "horizons": list(HORIZONS), "minSample": MIN_SAMPLE, "events": len(events), "done": done, "open": len(events) - done,
+        "firstSeen": min((e["seen"] for e in events), default=None),
+        "basis": f"기준 = 카드가 처음 보인 날 종가 → N거래일 후 종가(배당 미반영) · 초과 = 같은 기간 {BENCH[market]} 수익률 차감(%p) · "
+                 f"MFE/MAE = 20거래일 내 고가/저가 최대 도달률 · 손절 이탈 = 20거래일 내 가정 손절선 아래 종가 비율 · 완료 표본 {MIN_SAMPLE}건 미만은 표본 부족",
+        "scans": [{"id": sid, "tf": tf, "label": label, "stopRule": STOP_RULES[sid][2], **_agg([e for e in events if e["scan"] == sid])}
+                  for sid, tf, label, *_ in SCANS],
+        "total": _agg(events),
+    }
+    st_path.write_text(json.dumps(stats, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    log(f"  events: +{added} new → {len(events)} logged · {updated} outcomes updated · {done} done · wrote {ev_path.name} ({ev_path.stat().st_size/1e3:.0f} KB), {st_path.name}")
 
 
 # ----------------------------------------------------------------------------- main

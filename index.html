@@ -264,6 +264,31 @@
   .st-rules[open] summary::before{content:"▼ "}
   .st-rules ol{margin:0;padding:0 16px 12px 34px;font-size:12.5px;line-height:1.7;color:#e6d9b0}
   .st-rules li b{color:#f5d98a}
+  /* 스캔별 성과 (setups-stats-<m>.json) */
+  .st-perf{margin:0 0 14px;border:1px solid var(--border);border-radius:10px;background:#12171f}
+  .st-perf summary{cursor:pointer;padding:9px 14px;color:var(--muted);font-size:12.5px;font-weight:700;list-style:none}
+  .st-perf summary b{color:var(--text)}
+  .st-perf summary::before{content:"▶ ";font-size:10px}
+  .st-perf[open] summary::before{content:"▼ "}
+  .st-perf .wrap{overflow-x:auto;padding:0 12px 10px}
+  .st-perf table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .st-perf th{color:var(--muted);font-weight:600;text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);font-size:11px}
+  .st-perf th:first-child,.st-perf td:first-child{text-align:left}
+  .st-perf th.grp{border-left:1px solid var(--border)}
+  .st-perf td{padding:5px 8px;text-align:right;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text)}
+  .st-perf td.grp{border-left:1px solid var(--border)}
+  .st-perf td.na{color:#4a5160}
+  .st-perf td.pos{color:#86efac}
+  .st-perf td.neg{color:#f87171}
+  .st-perf td.x{font-weight:700}
+  .st-perf tr.bad td:first-child{color:#f87171}
+  .st-perf tr.low td{color:var(--muted)}
+  .st-perf tr.low td.pos,.st-perf tr.low td.neg{opacity:.75}
+  .st-perf tr.total td{border-top:1px solid var(--border);font-weight:700}
+  .st-perf .name{font-weight:700}
+  .st-perf .name small{color:var(--muted);font-weight:500;margin-left:4px}
+  .st-perf .chip{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#3a2f12;color:#f5d98a;margin-left:6px;vertical-align:1px}
+  .st-perf .basis{color:var(--muted);font-size:11px;line-height:1.6;padding:8px 14px 10px;border-top:1px solid var(--border)}
 
   .pager{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;color:var(--muted);font-size:12px}
   .pager button{background:var(--panel);border:1px solid var(--border);color:var(--text);
@@ -364,6 +389,11 @@
         <li><b>스캔별로 다르게 쓴다.</b> 각 스캔 제목 아래 노란 줄이 그 스캔의 쓰는 법. 바닥 탈출이 가장 값지고, 갭 상승은 정보, 200일선·30주선·10개월선은 군집으로만, 신고가는 보유 점검용.</li>
         <li><b>검증 전이다.</b> 임계값은 상수이고 한 건도 백테스트되지 않았다. 스캔별 20거래일 후 성과가 쌓이면(성과 패널) 남길 스캔과 버릴 스캔을 데이터로 정한다.</li>
       </ol>
+    </details>
+    <details class="st-perf" id="stPerf">
+      <summary id="stPerfSum">스캔별 성과</summary>
+      <div class="wrap" id="stPerfBody"></div>
+      <div class="basis" id="stPerfBasis"></div>
     </details>
     <div class="st-bar">
       <select id="stMcap"></select>
@@ -1128,11 +1158,12 @@ function stMetaHtml(){
 async function renderSetups(){
   const body=document.getElementById("stBody");
   body.innerHTML=`<div class="empty">셋업 불러오는 중…</div>`;
-  let s;
-  try{ [s, GP]=await Promise.all([fetchJson("setups-"+market+".json"), fetchJson("groups-"+market+".json").catch(()=>null)]); }
+  let s, perf;
+  try{ [s, GP, perf]=await Promise.all([fetchJson("setups-"+market+".json"), fetchJson("groups-"+market+".json").catch(()=>null), fetchJson("setups-stats-"+market+".json").catch(()=>null)]); }
   catch(e){ body.innerHTML=`<div class="err">setups-${market}.json 을 불러오지 못했습니다 (${esc(e.message)}).<br>uv run python scanner.py --market ${market} 로 생성하세요.</div>`; return; }
   if(viewMode!=="setups") return;
   ST=s; SCAN_TF_OF={}; SCAN_LBL={}; s.scans.forEach(x=>{ SCAN_TF_OF[x.id]=x.tf; SCAN_LBL[x.id]=x.label; });
+  renderPerf(perf);
   document.getElementById("meta").innerHTML=stMetaHtml();
   // toolbar: 시총 컷(종목 리스트와 같은 단계) + 그룹판 상위 5 그룹 토글
   const sel=document.getElementById("stMcap");
@@ -1167,6 +1198,35 @@ async function renderSetups(){
   ST_DRAWN.clear();
   body.querySelectorAll(".st-grid:not(details .st-grid) canvas").forEach(cv=>stDraw(cv));
   body.querySelectorAll("details.st-more").forEach(d=>d.addEventListener("toggle",()=>{ if(d.open) d.querySelectorAll("canvas").forEach(cv=>{ if(!ST_DRAWN.has(cv)) stDraw(cv); }); }));
+}
+// ---------- 스캔별 성과 패널 (setups-stats-<m>.json · scanner.py track_events) ----------
+// 각 히트는 영구 로그(setups-events)에 한 번만 적히고, 카드가 처음 보인 날 종가를 기준으로 5·10·20거래일 후 성과가 채워진다.
+// 지수 대비 20일 초과수익이 음수인 스캔은 빨강, 완료 표본 30건 미만은 '표본 부족'. 임계값 튜닝이 아니라 측정용.
+function renderPerf(ps){
+  const sum=document.getElementById("stPerfSum"), body=document.getElementById("stPerfBody"), basis=document.getElementById("stPerfBasis");
+  if(!ps||!ps.scans){ sum.textContent="스캔별 성과 — 아직 통계 파일이 없습니다 (다음 갱신 후 표시)"; body.innerHTML=""; basis.textContent=""; return; }
+  const fmt=(v,suf,d)=> v==null?"—":(v>0?"+":"")+v.toFixed(d)+suf;
+  const cell=(v,suf,d,extra)=> v==null?`<td class="na${extra||""}">—</td>`:`<td class="${v<0?"neg":v>0?"pos":""}${extra||""}">${fmt(v,suf,d)}</td>`;
+  const plain=(v,suf,d,extra)=> v==null?`<td class="na${extra||""}">—</td>`:`<td class="${extra||""}">${v.toFixed(d)}${suf}</td>`;
+  const rows=[...ps.scans.map(r=>({...r,isTotal:false})), {...ps.total,id:"total",label:"전체",tf:"",isTotal:true}];
+  const H=ps.horizons||[5,10,20], last=H[H.length-1];
+  let html=`<table><thead><tr><th>스캔</th><th>표본<br>완료 / 진행</th>`;
+  for(const N of H.slice(0,-1)) html+=`<th class="grp">${N}일 평균</th><th>${N}일 초과</th>`;
+  html+=`<th class="grp">${last}일 승률</th><th>${last}일 평균</th><th>${last}일 중앙</th><th>${last}일 초과<br>(지수 대비)</th><th class="grp">MFE</th><th>MAE</th><th>손절 이탈</th></tr></thead><tbody>`;
+  for(const r of rows){
+    const bad=r[`x${last}`]!=null&&r[`x${last}`]<0, low=!!r.lowSample;
+    const name=r.isTotal?`<span class="name">전체</span>`:`<span class="name" title="${esc("손절 가정: "+(r.stopRule||""))}">${esc(r.label)}<small>${SEC_LBL[r.tf]?SEC_LBL[r.tf][0]:""}</small></span>`;
+    html+=`<tr class="${bad?"bad":""}${low?" low":""}${r.isTotal?" total":""}">`+
+      `<td>${name}${low?`<span class="chip" title="완료 표본 ${r.done}건 < ${ps.minSample}건">표본 부족</span>`:""}</td>`+
+      `<td title="전체 ${r.n}건 · 20거래일이 찬 완료 ${r.done} · 진행 중 ${r.open}">${r.done} / ${r.open}</td>`;
+    for(const N of H.slice(0,-1)) html+=cell(r[`avg${N}`],"%",1,` grp" title="${N}거래일 지난 이벤트 ${r[`n${N}`]||0}건 평균`)+cell(r[`x${N}`],"%p",1,` x" title="${N}거래일 지난 이벤트 ${r[`n${N}`]||0}건 · 같은 기간 지수 ${fmt(r[`bench${N}`],"%",1)}`);
+    html+=plain(r[`win${last}`],"%",0,` grp" title="${last}일 후 플러스 비율 (${r[`n${last}`]||0}건)`)+cell(r[`avg${last}`],"%",1)+cell(r[`med${last}`],"%",1)+cell(r[`x${last}`],"%p",1,` x" title="같은 기간 지수 ${fmt(r[`bench${last}`],"%",1)}`)+
+      cell(r.mfe,"%",1,` grp" title="완료 이벤트의 20거래일 내 최대 상승 평균`)+cell(r.mae,"%",1,` " title="완료 이벤트의 20거래일 내 최대 하락 평균`)+plain(r.stopRate,"%",0,` " title="완료 이벤트 중 손절선 이탈 비율${r.stopAvg!=null?` · 이탈 시점 평균 ${fmt(r.stopAvg,"%",1)}`:""}`)+`</tr>`;
+  }
+  html+=`</tbody></table>`;
+  body.innerHTML=html;
+  sum.innerHTML=`스캔별 성과 — 카드가 보인 날 종가 → 5·10·20거래일 후 · 이벤트 <b>${ps.events}</b>건 (완료 <b>${ps.done}</b> · 진행 중 ${ps.open})${ps.firstSeen?` · ${ps.firstSeen}부터`:""} · 지수 = ${esc(ps.benchLabel||ps.bench)}`+(ps.done<ps.minSample?` · <span class="chip">표본 쌓는 중</span>`:"");
+  basis.innerHTML=esc(ps.basis||"")+` · 완료 = 20거래일 경과(이후 고정) · 5·10일 열은 그만큼 지난 이벤트 전부를 평균(진행 중 포함) · 빨강 스캔 = 20일 초과수익 음수 · 갱신 ${esc((ps.generatedAt||"").slice(0,10))}`;
 }
 function stDraw(cv){
   const card=cv.closest(".st-card"), tkr=card.dataset.tkr, sid=card.dataset.sid, st=ST.stocks[tkr];
