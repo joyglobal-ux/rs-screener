@@ -541,8 +541,8 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
         if t not in meta:
             continue
         s = meta[t]
-        if not s.get("marketCap") or s.get("lastDate") != as_of:
-            continue                      # stale (no bar today) or no cap → skip
+        if not s.get("marketCap") or df.index[-1].strftime("%Y-%m-%d") != as_of:
+            continue                      # no bar on the as-of date (halt / delisting) or no cap → skip
         if is_halted(df["Close"]):
             continue
         scanned += 1
@@ -656,14 +656,27 @@ def load_ohlcv(market: str) -> tuple[dict[str, pd.DataFrame], str]:
     path = CACHE_DIR / f"ohlcv-{market}.pkl"
     if path.exists():
         blob = pd.read_pickle(path)
-        log(f"  ohlcv cache: {len(blob['ohlcv'])} tickers · asOf {blob['asOf']} · generated {blob['generatedAt']}")
-        return blob["ohlcv"], blob["asOf"]
+        as_of = modal_last_date(blob["ohlcv"]) or blob["asOf"]
+        log(f"  ohlcv cache: {len(blob['ohlcv'])} tickers · asOf {as_of} (cache max {blob['asOf']}) · generated {blob['generatedAt']}")
+        return blob["ohlcv"], as_of
     log("  ohlcv cache missing → downloading universe (run compute_returns.py first to avoid this)")
     universe = json.loads((HERE / f"universe-{market}.json").read_text(encoding="utf-8"))
     start = (pd.Timestamp.now(tz="UTC").normalize() - pd.Timedelta(days=LOOKBACK_DAYS)).strftime("%Y-%m-%d")
     frames = download_frames([u["ticker"] for u in universe], start)
-    as_of = max(f.index[-1] for f in frames.values()).strftime("%Y-%m-%d")
-    return frames, as_of
+    return frames, modal_last_date(frames)
+
+
+def modal_last_date(frames: dict[str, pd.DataFrame]) -> str | None:
+    """The trading date most tickers end on. Yahoo occasionally returns the latest
+    bar for only a handful of names (2026-10-29 evening: 2 of 1,275 KR tickers had
+    the day's bar) — anchoring on the max date would then skip the whole market."""
+    dates = pd.Series([f.index[-1] for f in frames.values() if len(f)])
+    if dates.empty:
+        return None
+    mode = dates.mode().iloc[0]
+    if mode != dates.max():
+        log(f"  note: {int((dates == dates.max()).sum())} tickers end on {dates.max().date()} but most ({int((dates == mode).sum())}) end on {mode.date()} → asOf {mode.date()}")
+    return mode.strftime("%Y-%m-%d")
 
 
 def main() -> None:

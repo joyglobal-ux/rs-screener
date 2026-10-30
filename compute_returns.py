@@ -422,8 +422,12 @@ def main() -> None:
         return
 
     # Merge metadata + returns into final payload.
-    last_dates = [v["lastDate"] for v in results.values()]
-    as_of = max(last_dates) if last_dates else None
+    # asOf = the date MOST tickers end on (mode), not the max: Yahoo sometimes has the
+    # latest bar for only a few names, and the max would mislabel a stale market as fresh.
+    last_dates = pd.Series([v["lastDate"] for v in results.values()])
+    as_of = last_dates.mode().iloc[0] if not last_dates.empty else None
+    if as_of and last_dates.max() != as_of:
+        print(f"  note: {(last_dates == last_dates.max()).sum()} tickers end on {last_dates.max()}, most on {as_of} → asOf {as_of}", file=sys.stderr)
     stocks = []
     for m in meta:
         t = m["ticker"]
