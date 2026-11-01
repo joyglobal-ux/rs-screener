@@ -396,7 +396,7 @@ def build_groups(market: str, ohlcv: dict[str, pd.DataFrame], universe: list[dic
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "weeks": GROUP_WEEKS,
         "legend": "일=50일선 · 주=30주선 · 월=10개월선 · ▲ 이평 위·이평 상승 / ▼ 이평 아래·이평 하락 / 엇갈림 · 3개월 상대 = 그룹 3M − 지수 3M (%p)",
-        "groupOf": group_of_stock if market == "kr" else {},   # KR: ticker → group id (US uses the sector table client-side via stock.group)
+        "groupOf": group_of_stock,   # ticker → group id (KR: WICS 묶음, US: 섹터/산업 ETF). 배분판(/allocation/)이 허용 섹터 상위 종목을 뽑는 데 쓴다
         "cards": cards,
     }, group_of_stock
 
