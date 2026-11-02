@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>미국·한국 종목 리스트 · 기간별 주가상승률 · RS</title>
 <style>
   :root{
@@ -323,7 +323,116 @@
   .pager button:disabled{opacity:.4;cursor:default}
   .empty{padding:40px;text-align:center;color:var(--muted)}
   .err{padding:30px;text-align:center;color:var(--neg);line-height:1.6}
+  /* ── 폰 폭(<640px): 종목 표 → 카드형 리스트, 필터 접기 (PWA 2026-11-02). 데스크톱은 그대로 ──
+     카드 칸은 nth-child로 고른다 → COLS 순서(☆·#·티커·종목명·섹터·현재가·시총·1W·1M·3M·6M·1Y·YTD·RS·단기RS·품질·가속·과열도·이격50·이격200)를 바꾸면 여기도 같이 */
+  .flt-toggle{display:none}
+  @media (max-width:639px){
+    .wrap{padding:12px 12px 40px}
+    header{gap:8px 10px}
+    header .sub,header .author{display:none}
+    .backlink{margin-bottom:6px}
+    .view-toggle{display:flex;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .view-toggle::-webkit-scrollbar{display:none}
+    .view-toggle button{flex:1 0 auto;padding:8px 12px}
+    .controls{gap:8px}
+    #search{min-width:0;flex:1 1 140px;font-size:16px;padding:7px 10px}
+    .flt-toggle{display:inline-flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--border);color:var(--muted);
+      border-radius:7px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer}
+    .controls.open .flt-toggle{color:var(--text);border-color:var(--accent)}
+    .controls:not(.open)>select,.controls:not(.open)>.spacer{display:none}
+    .controls select{flex:1 1 45%;min-width:0;max-width:100%}
+    .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{flex:0 0 auto}
+    .group-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+    .group-bar::-webkit-scrollbar{display:none}
+    .gchip{flex:0 0 auto;white-space:nowrap}
+    #meta{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;margin:4px 0 10px}
+    #meta.open{display:block}
+    .gtarget{margin-left:0}
+    #tablewrap{max-height:none;overflow:visible;border:none;background:none;border-radius:0}
+    #tablewrap table,#tablewrap tbody{display:block}
+    #tablewrap thead{display:none}
+    #tbody tr{display:grid;grid-template-columns:30px repeat(5,minmax(0,1fr));align-items:center;gap:2px 4px;
+      background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 10px 9px 4px;margin-bottom:7px}
+    #tbody tr:hover{background:var(--panel)}
+    #tbody td{display:none;padding:0;border:none;background:none!important;white-space:nowrap}
+    #tbody td:nth-child(1){display:block;grid-row:1/4;grid-column:1;align-self:center;font-size:19px;width:auto;padding:0}
+    #tbody td:nth-child(3){display:block;grid-row:1;grid-column:2/6;text-align:left;font-size:14.5px;overflow:hidden;text-overflow:ellipsis}
+    #tbody td:nth-child(4){display:block;grid-row:2;grid-column:2/6;text-align:left;max-width:none;overflow:hidden;text-overflow:ellipsis;font-size:12px;margin-bottom:5px}
+    #tbody td:nth-child(14){display:block;grid-row:1/3;grid-column:6;justify-self:end;align-self:start;font-size:16px;text-align:right}
+    #tbody td:nth-child(14)::before{content:"RS";display:block;font-size:9.5px;color:var(--muted);text-align:center;margin-bottom:1px}
+    #tbody td:nth-child(14) b{background:rgba(34,197,94,.22);border-radius:6px;padding:1px 6px}
+    #tbody td:nth-child(15),#tbody td:nth-child(9),#tbody td:nth-child(10),#tbody td:nth-child(18),#tbody td:nth-child(19){
+      display:block;grid-row:3;text-align:left;font-size:12.5px;font-weight:600}
+    #tbody td:nth-child(15)::before,#tbody td:nth-child(9)::before,#tbody td:nth-child(10)::before,#tbody td:nth-child(18)::before,#tbody td:nth-child(19)::before{
+      display:block;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.2px;margin-bottom:1px}
+    #tbody td:nth-child(15){grid-column:2} #tbody td:nth-child(15)::before{content:"단기RS"}
+    #tbody td:nth-child(15) b{color:#5eead4}
+    #tbody td:nth-child(9){grid-column:3}  #tbody td:nth-child(9)::before{content:"1M"}
+    #tbody td:nth-child(10){grid-column:4} #tbody td:nth-child(10)::before{content:"3M"}
+    #tbody td:nth-child(19){grid-column:5} #tbody td:nth-child(19)::before{content:"50일선"}
+    #tbody td:nth-child(18){grid-column:6} #tbody td:nth-child(18)::before{content:"과열도"}
+    #tbody td:nth-child(18):not(.na){color:#fdba74}
+    .pager{flex-wrap:wrap;gap:8px}
+    .modal-bg{padding:8px}
+    .modal{padding:14px 12px 16px}
+    #devChart{height:300px}
+    .mhold .hrow{grid-template-columns:60px 1fr 50px;font-size:12px}
+    .mhold .hrow>:nth-child(4){display:none}
+  }
 </style>
+<!-- polaris-app:start — 공용 PWA 스니펫. 원본: polaris-hub/_pwa/snippet.html, 고칠 땐 원본 수정 후 _pwa/inject.py로 전 페이지 일괄 반영 -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0b0d14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Polaris">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<style>
+html.pwa body{padding-bottom:calc(64px + env(safe-area-inset-bottom))!important}
+#pwa-tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;box-sizing:border-box;
+  padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background:rgba(11,13,20,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-top:1px solid #272d3c;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}
+#pwa-tabs a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  height:56px;color:#69727f;text-decoration:none;font-size:10.5px;font-weight:600;line-height:1;
+  letter-spacing:-.2px;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#pwa-tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#pwa-tabs a.on{color:#8b9bff}
+#pwa-tabs a.on svg{filter:drop-shadow(0 0 6px rgba(139,155,255,.55))}
+</style>
+<script>
+(function(){
+  var d=document.documentElement,q=false;
+  try{if(/[?&]pwa=1/.test(location.search))sessionStorage.setItem('polaris-pwa','1');q=sessionStorage.getItem('polaris-pwa')==='1'}catch(e){}
+  var sa=q||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+  if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){})});
+  if(!sa)return;
+  d.classList.add('pwa');
+  var T=[
+    ['/','홈','<path d="M12 2.5l1.4 7.1 7.1 1.4-7.1 1.4L12 21.5l-1.4-9.1L3.5 11l7.1-1.4z"/>'],
+    ['/portfolio-tracker/','포트폴리오','<path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5H12z"/><path d="M15 3.8a8.5 8.5 0 0 1 5.2 5.2H15z"/>'],
+    ['/allocation/','배분판','<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'],
+    ['/rs-screener/','종목 리스트','<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>'],
+    ['/#research','리서치','<path d="M4 5.5A2 2 0 0 1 6 3.5h14v14H6a2 2 0 0 0-2 2z"/><path d="M4 19.5a2 2 0 0 0 2 2h14v-4"/>']
+  ];
+  function on(h){var p=location.pathname,r=location.hash==='#research';
+    if(h==='/')return(p==='/'||p==='/index.html')&&!r;
+    if(h==='/#research')return p.indexOf('/research/')===0||((p==='/'||p==='/index.html')&&r);
+    return p.indexOf(h)===0}
+  function paint(){var a=document.querySelectorAll('#pwa-tabs a');for(var i=0;i<a.length;i++)a[i].className=on(T[i][0])?'on':''}
+  function mount(){if(document.getElementById('pwa-tabs'))return;
+    var n=document.createElement('nav');n.id='pwa-tabs';n.setAttribute('aria-label','Polaris 탭');
+    n.innerHTML=T.map(function(t){return'<a href="'+t[0]+'"><svg viewBox="0 0 24 24" aria-hidden="true">'+t[2]+'</svg>'+t[1]+'</a>'}).join('');
+    document.body.appendChild(n);paint()}
+  addEventListener('hashchange',paint);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
+})();
+</script>
+<!-- polaris-app:end -->
 </head>
 <body>
 <div class="wrap">
@@ -350,6 +459,7 @@
 
   <div class="controls" id="controls">
     <input id="search" type="text" placeholder="티커 / 종목명 검색…" autocomplete="off">
+    <button type="button" class="flt-toggle" id="fltToggle" aria-expanded="false">필터 ▾</button>
     <select id="sector"><option value="">전체 섹터</option></select>
     <select id="group" style="display:none" title="그룹판 그룹 = 업종 묶음(KR WICS) / 섹터·산업 ETF(US)"><option value="">전체 그룹</option></select>
     <select id="industry" style="display:none"><option value="">전체 세부업종</option></select>
@@ -1752,6 +1862,8 @@ function init(){
   document.querySelectorAll("#secLevel button").forEach(b=>b.onclick=()=>{ secLevel=b.dataset.l; renderSectors(); });
   document.getElementById("mcap").addEventListener("change", applyFilters);
   document.getElementById("pagesize").addEventListener("change", e=>{ pageSize=parseInt(e.target.value); page=0; render(); });
+  document.getElementById("meta").addEventListener("click", e=>{ if(innerWidth<640 && !e.target.closest("a,button,select,input")) e.currentTarget.classList.toggle("open"); });
+  document.getElementById("fltToggle").onclick=e=>{ const c=document.getElementById("controls"), o=c.classList.toggle("open"); e.currentTarget.setAttribute("aria-expanded",o); e.currentTarget.textContent=o?"필터 ▴":"필터 ▾"; };
   document.querySelectorAll("#marketToggle button").forEach(b=>{ b.onclick=()=>setMarket(b.dataset.m); });
   document.querySelectorAll("#viewToggle button").forEach(b=>{ b.onclick=()=>setViewMode(b.dataset.v); });
   // row clicks via event delegation (rows are re-rendered as innerHTML)

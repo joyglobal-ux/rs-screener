@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>활용 전략 · 미국·한국 종목 리스트</title>
 <style>
   :root{
@@ -63,6 +63,57 @@
   summary{cursor:pointer;font-weight:600;color:var(--muted)}
   .foot{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid var(--border);padding-top:14px}
 </style>
+<!-- polaris-app:start — 공용 PWA 스니펫. 원본: polaris-hub/_pwa/snippet.html, 고칠 땐 원본 수정 후 _pwa/inject.py로 전 페이지 일괄 반영 -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0b0d14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Polaris">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<style>
+html.pwa body{padding-bottom:calc(64px + env(safe-area-inset-bottom))!important}
+#pwa-tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;box-sizing:border-box;
+  padding:0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background:rgba(11,13,20,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-top:1px solid #272d3c;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}
+#pwa-tabs a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  height:56px;color:#69727f;text-decoration:none;font-size:10.5px;font-weight:600;line-height:1;
+  letter-spacing:-.2px;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#pwa-tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#pwa-tabs a.on{color:#8b9bff}
+#pwa-tabs a.on svg{filter:drop-shadow(0 0 6px rgba(139,155,255,.55))}
+</style>
+<script>
+(function(){
+  var d=document.documentElement,q=false;
+  try{if(/[?&]pwa=1/.test(location.search))sessionStorage.setItem('polaris-pwa','1');q=sessionStorage.getItem('polaris-pwa')==='1'}catch(e){}
+  var sa=q||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+  if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){})});
+  if(!sa)return;
+  d.classList.add('pwa');
+  var T=[
+    ['/','홈','<path d="M12 2.5l1.4 7.1 7.1 1.4-7.1 1.4L12 21.5l-1.4-9.1L3.5 11l7.1-1.4z"/>'],
+    ['/portfolio-tracker/','포트폴리오','<path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5H12z"/><path d="M15 3.8a8.5 8.5 0 0 1 5.2 5.2H15z"/>'],
+    ['/allocation/','배분판','<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'],
+    ['/rs-screener/','종목 리스트','<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>'],
+    ['/#research','리서치','<path d="M4 5.5A2 2 0 0 1 6 3.5h14v14H6a2 2 0 0 0-2 2z"/><path d="M4 19.5a2 2 0 0 0 2 2h14v-4"/>']
+  ];
+  function on(h){var p=location.pathname,r=location.hash==='#research';
+    if(h==='/')return(p==='/'||p==='/index.html')&&!r;
+    if(h==='/#research')return p.indexOf('/research/')===0||((p==='/'||p==='/index.html')&&r);
+    return p.indexOf(h)===0}
+  function paint(){var a=document.querySelectorAll('#pwa-tabs a');for(var i=0;i<a.length;i++)a[i].className=on(T[i][0])?'on':''}
+  function mount(){if(document.getElementById('pwa-tabs'))return;
+    var n=document.createElement('nav');n.id='pwa-tabs';n.setAttribute('aria-label','Polaris 탭');
+    n.innerHTML=T.map(function(t){return'<a href="'+t[0]+'"><svg viewBox="0 0 24 24" aria-hidden="true">'+t[2]+'</svg>'+t[1]+'</a>'}).join('');
+    document.body.appendChild(n);paint()}
+  addEventListener('hashchange',paint);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
+})();
+</script>
+<!-- polaris-app:end -->
 </head>
 <body>
 <div class="wrap">
