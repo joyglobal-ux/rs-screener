@@ -257,6 +257,7 @@
   .st-more[open] summary::before{content:"▼ "}
   .st-more .st-grid{padding:0 12px 12px}
   .st-none{color:var(--muted);font-size:12px;padding:6px 0 2px}
+  .clu-detail td{background:#131822;padding:6px 10px 10px}
   /* 군집 표 · 한 줄 리스트 (카드 정책 2026-10-30) */
   .st-clu{margin:18px 0 6px;border:1px solid var(--border);border-radius:10px;background:var(--panel);overflow-x:auto}
   .st-clu table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -350,6 +351,7 @@
   <div class="controls" id="controls">
     <input id="search" type="text" placeholder="티커 / 종목명 검색…" autocomplete="off">
     <select id="sector"><option value="">전체 섹터</option></select>
+    <select id="group" style="display:none" title="그룹판 그룹 = 업종 묶음(KR WICS) / 섹터·산업 ETF(US)"><option value="">전체 그룹</option></select>
     <select id="industry" style="display:none"><option value="">전체 세부업종</option></select>
     <select id="mcap"></select>
     <span class="spacer"></span>
@@ -617,13 +619,34 @@ function sortView(){
   }
 }
 
+// ---------- 그룹 필터 (그룹판·군집 표의 그룹 → 구성 종목) ----------
+let GROUPS={}, groupFilter="", pendingGroup="";
+const gid=c=>c.id.replace(/^kr:/,"");
+async function ensureGroups(m){ if(m in GROUPS) return GROUPS[m]; try{ GROUPS[m]=await fetchJson("groups-"+m+".json"); }catch(e){ GROUPS[m]=null; } return GROUPS[m]; }
+function rebuildGroupOptions(){
+  const sel=document.getElementById("group"), g=GROUPS[market];
+  if(!g){ sel.style.display="none"; return; }
+  const cards=g.cards.filter(c=>c.kind==="group"&&c.n).sort((a,b)=>(b.rel3M??-99)-(a.rel3M??-99));
+  sel.innerHTML='<option value="">전체 그룹</option>'+cards.map(c=>`<option value="${esc(gid(c))}">${esc(c.name)} (${c.n}) ${c.rel3M!=null?(c.rel3M>=0?"+":"")+c.rel3M.toFixed(1)+"p":""}</option>`).join("");
+  sel.value=groupFilter; sel.style.display="";
+}
+function groupMembersOf(gv){ const gof=(GROUPS[market]&&GROUPS[market].groupOf)||{}; return rows.filter(r=>gof[r.ticker]===gv); }
+function openGroup(gv){
+  pendingGroup=gv;
+  if(viewMode!=="stocks") setViewMode("stocks");
+  if(GROUPS[market]){ groupFilter=gv; pendingGroup=""; rebuildGroupOptions(); document.getElementById("search").value=""; document.getElementById("sector").value=""; document.getElementById("industry").value=""; applyFilters(); updateGroupHash(); window.scrollTo({top:0,behavior:"smooth"}); }
+}
+function updateGroupHash(){ try{ history.replaceState(null,"", viewMode==="stocks"&&groupFilter ? `#stocks?m=${market}&group=${encodeURIComponent(groupFilter)}` : location.pathname+location.search); }catch(e){} }
+
 function applyFilters(){
   const q=document.getElementById("search").value.trim().toLowerCase();
   const sec=document.getElementById("sector").value;
   const ind=document.getElementById("industry").value;
   const minCap=parseFloat(document.getElementById("mcap").value)||0;
   const selMembers=selTickerSet();
+  const gof=(GROUPS[market]&&GROUPS[market].groupOf)||{};
   view = rows.filter(r=>{
+    if(groupFilter && gof[r.ticker]!==groupFilter) return false;
     if(selGroups.length && !selMembers.has(r.ticker)) return false;
     if(r.marketCap<minCap) return false;
     if(sec && r.sector!==sec) return false;
@@ -642,7 +665,9 @@ function render(){
   const empty=document.getElementById("empty");
   if(view.length===0){
     tb.innerHTML="";
-    empty.textContent = selGroups.length && selTickerSet().size===0
+    empty.textContent = groupFilter && !Object.keys((GROUPS[market]&&GROUPS[market].groupOf)||{}).length
+      ? "이 시장의 그룹 매핑이 아직 없습니다 — 다음 데이터 갱신(US 21:30 UTC) 뒤 사용 가능."
+      : selGroups.length && selTickerSet().size===0
       ? "선택한 그룹에 종목이 없습니다. [전체]에서 ☆를 눌러 담으세요."
       : "조건에 맞는 종목이 없습니다.";
     empty.style.display="block"; renderPager(); return;
@@ -1068,7 +1093,7 @@ function gpCard(c){
   const nm = c.kind==="etf" && c.fund ? `${esc(c.name)} <span class="gp-n">${esc(c.fund)}</span>` : esc(c.name);
   const sub = c.kind==="group" && c.n!=null ? `<span class="gp-n">${c.n}종목</span>` : (c.kind==="etf"||c.kind==="index")&&c.ticker&&!c.ticker.startsWith("^") ? `<span class="gp-n">${esc(etfCode(c.ticker))}</span>` : "";
   const wics = c.wics&&c.wics.length ? ` title="${esc("WICS: "+c.wics.join(", "))}"` : "";
-  return `<div class="gp-card ${c.kind}"${wics}>
+  return `<div class="gp-card ${c.kind}"${wics}${c.kind==="group"?` data-gid="${esc(gid(c))}" style="cursor:pointer" title="클릭: 구성 종목 보기(종목 뷰)"`:""}>
     <div class="gp-head"><b>${nm}</b>${sub}<span class="gp-chg ${pctClass(chg)}">${chg==null?"—":(chg>=0?"+":"")+chg.toFixed(1)+"%"}</span></div>
     ${gpChart(c)}
     <div class="gp-badges">${badgeChip(c,"d")}${badgeChip(c,"w")}${badgeChip(c,"m")}</div>
@@ -1144,7 +1169,7 @@ function stAnnot(st,sid,tf){   // dashed reference line for the chart (only on t
   }
   return null;
 }
-let SCAN_TF_OF={}, SCAN_LBL={};
+let SCAN_TF_OF={}, SCAN_LBL={}, STS_ALL=null, STS_PASS=()=>true;
 // 스캔별 쓰는 법 (2026-10-30 Jay 합의). scanner.py SCANS의 use와 같은 문구 — json에 없어도 보이도록 여기에도 둔다.
 const SCAN_USE={
   gap_up:"갭은 정보지 매수 신호가 아니다. 갭 당일 추격 금지 → 갭일 저가 지키며 3~10일 횡보 → 그 고점 돌파에 진입, 손절 = 갭일 저가. 52주 고점 −5% 이내에서 터진 갭이 바닥 갭보다 낫다.",
@@ -1233,6 +1258,7 @@ async function renderSetups(){
     nCards+=cards.length; nRows+=rows.length;
   }
   // 2) 군집 표 — 그룹 × 스캔 히트 수 (필터 무관, 시총만)
+  STS_ALL=all; STS_PASS=passCap;
   const byG={};
   for(const st of all){ if(!passCap(st)) continue; const g=st.group||"(미분류)"; const row=byG[g]||(byG[g]={g, n:0, nw:0, c:{}, w:{}});
     for(const sid of Object.keys(st.scans)){ row.c[sid]=(row.c[sid]||0)+1; if(st.scans[sid].isNew) row.w[sid]=(row.w[sid]||0)+1; } row.n=Object.values(row.c).reduce((a,b)=>a+b,0); row.nw=Object.values(row.w).reduce((a,b)=>a+b,0); }
@@ -1241,7 +1267,7 @@ async function renderSetups(){
   html+=`<h2 class="st-sec">군집 표<span>그룹 × 스캔 히트 수(되돌아보기 창 안 전체, 필터 무관) · <b style="color:#f5d98a">3건 이상</b>이면 섹터가 도는 중 → 그룹판 칩 확인 · 괄호 = 오늘 새로</span></h2>`;
   html+=`<div class="st-clu"><table><thead><tr><th>그룹</th>${s.scans.map(x=>`<th class="${x.core?"core":""}" title="${esc(x.rule)}">${esc(x.label.replace(" · 30주선과 12주 고점 돌파",""))}<br><span style="font-weight:400">${SEC_LBL[x.tf][0]}</span></th>`).join("")}<th>합계</th></tr></thead><tbody>`;
   for(const r of grows){ const isTop=top5&&top5.has(r.g);
-    html+=`<tr><td class="g ${isTop?"top":""}" title="${isTop?"그룹판 3개월 상대 상위 5":""}">${esc(groupName(r.g))}${isTop?" ★":""}</td>`+
+    html+=`<tr><td class="g ${isTop?"top":""}" data-cg="${esc(r.g)}" style="cursor:pointer" title="${isTop?"그룹판 3개월 상대 상위 5 · ":""}클릭: 걸린 종목 펼치기">${esc(groupName(r.g))}${isTop?" ★":""} <span style="color:var(--muted);font-weight:400">▾</span></td>`+
       s.scans.map(x=>{ const v=r.c[x.id]||0, w=r.w[x.id]||0; return `<td class="${cls(v)} ${x.core?"core":""}"><span class="nb">${v||"·"}</span>${w?`<span class="nw">+${w}</span>`:""}</td>`; }).join("")+
       `<td class="tot">${r.n}${r.nw?`<span class="nw">+${r.nw}</span>`:""}</td></tr>`; }
   html+=`</tbody></table></div>`;
@@ -1515,6 +1541,9 @@ function setMarket(m){
     const o=document.createElement("option"); o.value=s; o.textContent=s; sec.appendChild(o);
   });
   rebuildIndustryOptions();                      // US: populate · KR: hide+clear
+  groupFilter=""; document.getElementById("group").style.display="none";
+  ensureGroups(m).then(()=>{ if(market!==m) return; rebuildGroupOptions();
+    if(pendingGroup){ groupFilter=pendingGroup; pendingGroup=""; document.getElementById("group").value=groupFilter; applyFilters(); updateGroupHash(); } });
   if(market!=="us") secLevel="sector";           // industry 집계는 US 전용
   document.getElementById("secLevel").style.display = (viewMode==="sectors" && market==="us") ? "" : "none";
   marketMetaHtml =
@@ -1706,6 +1735,20 @@ function init(){
   document.getElementById("search").addEventListener("input", applyFilters);
   document.getElementById("sector").addEventListener("change", ()=>{ rebuildIndustryOptions(); applyFilters(); });
   document.getElementById("industry").addEventListener("change", applyFilters);
+  document.getElementById("group").addEventListener("change", e=>{ groupFilter=e.target.value; applyFilters(); updateGroupHash(); });
+  // 그룹판 카드 클릭 → 구성 종목 · 군집 표 그룹명 클릭 → 걸린 종목 펼침
+  document.getElementById("gpBody").addEventListener("click", e=>{ const c=e.target.closest(".gp-card[data-gid]"); if(c&&c.dataset.gid) openGroup(c.dataset.gid); });
+  document.getElementById("stBody").addEventListener("click", e=>{
+    const og=e.target.closest("[data-open-group]"); if(og){ e.preventDefault(); openGroup(og.dataset.openGroup); return; }
+    const cell=e.target.closest("td.g[data-cg]"); if(!cell) return;
+    const tr=cell.parentElement, next=tr.nextElementSibling;
+    if(next&&next.classList.contains("clu-detail")){ next.remove(); return; }
+    const g=cell.dataset.cg, list=(STS_ALL||[]).filter(st=>(st.group||"(미분류)")===g&&STS_PASS(st)).sort((a,b)=>(b.score||0)-(a.score||0))
+      .map(st=>{ const sid=st.rep||Object.keys(st.scans)[0]; const r=st.scans[sid]; return [st,sid,r&&r.isNew?"오늘 새로":(r?"먼저 걸림 "+r.eventDate.slice(5).replace("-","/"):"")]; });
+    const n=groupMembersOf(g).length;
+    const d=document.createElement("tr"); d.className="clu-detail"; d.innerHTML=`<td colspan="${tr.children.length}"><div class="st-sub2">걸린 종목 <b>${list.length}</b> · 이 그룹 구성 종목 ${n||"?"}개 중 → <a href="#" data-open-group="${esc(g)}">구성 종목 전체 보기 (종목 뷰, RS순) →</a></div>${list.length?stRows(list):""}</td>`;
+    tr.after(d);
+  });
   document.querySelectorAll("#secLevel button").forEach(b=>b.onclick=()=>{ secLevel=b.dataset.l; renderSectors(); });
   document.getElementById("mcap").addEventListener("change", applyFilters);
   document.getElementById("pagesize").addEventListener("change", e=>{ pageSize=parseInt(e.target.value); page=0; render(); });
@@ -1755,7 +1798,9 @@ function init(){
   let saved="us"; try{ saved=localStorage.getItem("rs-market")||"us"; }catch(e){}
   if(!setMarket(saved)) setMarket(saved==="us"?"kr":"us");
   // #etf deep link (e.g. from the Polaris hub) opens the 산업 ETF view directly
-  const h=location.hash.slice(1);
+  const [h,qs]=location.hash.slice(1).split("?"); const q=new URLSearchParams(qs||"");
+  if(q.get("m")&&q.get("m")!==market) setMarket(q.get("m"));
+  if(q.get("group")) pendingGroup=q.get("group");
   setViewMode((h==="etf"&&ETF) || h==="groups" || h==="setups" ? h : "stocks");   // sets toggle active state + correct visibility
 }
 
