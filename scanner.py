@@ -54,6 +54,7 @@ import pandas as pd
 import yfinance as yf
 
 import compute_etf
+from descriptions import ensure_descriptions
 from compute_returns import (CACHE_DIR, LOOKBACK_DAYS, MARKET_META, download_chunk, is_halted)
 
 HERE = Path(__file__).parent
@@ -649,8 +650,13 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
     weekly_frames: dict[str, pd.DataFrame] = {}
     monthly_frames: dict[str, pd.DataFrame] = {}
     earnings: dict[str, str | None] = {}
+    descs: dict[str, str] = {}
     if extra and shown_tickers:
         tl = sorted(shown_tickers)
+        try:   # 회사 한 줄 소개 (desc-<m>.json 캐시, 신규 종목만 받아 Claude로 요약 — 키 없으면 원문 첫 문장)
+            descs = ensure_descriptions(market, [(t, meta[t]["name"]) for t in tl])
+        except Exception as e:  # noqa: BLE001
+            log(f"  desc: skipped ({type(e).__name__}: {str(e)[:100]})")
         t1 = time.time()
         weekly_frames = download_frames(tl, (pd.Timestamp.now(tz="UTC").normalize() - pd.DateOffset(years=WEEKLY_YEARS + 1)).strftime("%Y-%m-%d"), "1wk")
         monthly_frames = download_frames(tl, (pd.Timestamp.now(tz="UTC").normalize() - pd.DateOffset(years=MONTHLY_YEARS + 1)).strftime("%Y-%m-%d"), "1mo")
@@ -672,7 +678,7 @@ def build_setups(market: str, ohlcv: dict[str, pd.DataFrame], stocks: list[dict]
             "group": group_of.get(t), "earnings": earnings.get(t),
             "scans": res,
             "tags": [sid for sid, *_ in SCANS if sid in res],
-            "rep": rep_of[t], "q": qualifies(t),
+            "rep": rep_of[t], "q": qualifies(t), "desc": descs.get(t),
         }
         if t in shown_tickers:
             rec["d"] = pack_bars(df, bench, (50, 200), DAILY_BARS, axis)

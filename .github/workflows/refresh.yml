@@ -53,6 +53,8 @@ jobs:
           enable-cache: true
 
       - name: Refresh universe + returns (${{ steps.pick.outputs.label }})
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # 셋업 카드 회사 소개 요약(descriptions.py); 없으면 원문 첫 문장
         run: |
           # Retry: bulk price/universe sources (yfinance, KRX) are occasionally
           # flaky and a hard failure would otherwise leave data stale until the
@@ -75,7 +77,8 @@ jobs:
                   data-kr.js data-kr.json universe-kr.json series-kr.js sector_map_kr.json \
                   data-etf.js data-etf.json series-etf.js \
                   groups-us.json setups-us.json setups-history-us.json setups-events-us.json setups-stats-us.json \
-                  groups-kr.json setups-kr.json setups-history-kr.json setups-events-kr.json setups-stats-kr.json
+                  groups-kr.json setups-kr.json setups-history-kr.json \
+                  desc-us.json desc-kr.json setups-events-kr.json setups-stats-kr.json
           if git diff --staged --quiet; then
             echo "No data changes."
           else

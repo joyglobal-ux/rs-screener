@@ -236,6 +236,7 @@
   .st-star{cursor:pointer;color:#3a4150;font-size:17px;user-select:none;line-height:1}
   .st-star:hover,.st-star.on{color:#f5c451}
   .st-sub{color:var(--muted);font-size:12px;margin:3px 0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .st-desc{color:#c9d1d9;font-size:12.5px;line-height:1.55;margin:-4px 0 9px}
   .st-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
   .sb{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
   .sb.scan{background:#e6edf3;color:#0e1117}
@@ -1304,6 +1305,7 @@ function stCard(st,sid,isNew){
       <span class="st-star${on?" on":""}" data-tkr="${esc(st.ticker)}" title="관심그룹에 담기">${on?"★":"☆"}</span>
       <span class="st-price">${st.price!=null?fmtPrice(st.price):"—"}<b class="${pctClass(st.chg1D)}">${st.chg1D==null?"":(st.chg1D>=0?"+":"")+st.chg1D.toFixed(1)+"%"}</b></span></div>
     <div class="st-sub" title="${sub}">${sub}</div>
+    ${st.desc?`<div class="st-desc">${esc(st.desc)}</div>`:""}
     <div class="st-badges"><span class="sb scan">${SEC_LBL[SCAN_TF_OF[sid]][0]} · ${esc(SCAN_LBL[sid])}</span>${tags}${st.score!=null?`<span class="sb rs">RS ${st.score}</span>`:""}${st.scoreShort!=null?`<span class="sb rs" title="단기RS">단기 ${st.scoreShort}</span>`:""}${earn}${isNew?`<span class="sb new">오늘 새로</span>`:""}</div>
     <div class="st-tf">${["d","w","m"].map(k=>`<button data-tf="${k}" class="${k===tf?"active":""}" ${st[k]?"":"disabled"}>${TF_LBL[k]}</button>`).join("")}</div>
     <canvas class="st-chart"></canvas>
@@ -1401,7 +1403,7 @@ function stRows(list){
   return `<div class="st-rows">`+list.map(([st,sid,why])=>{ const r=st.scans[sid]; const on=inTarget(st.ticker);
     const tags=st.tags.filter(x=>x!==sid).map(x=>SCAN_LBL[x]||x).join(" · ");
     return `<div class="st-row"><span><span class="tkr chartlink" data-tkr="${esc(st.ticker)}">${esc(etfCode(st.ticker))}</span> <span class="st-star${on?" on":""}" data-tkr="${esc(st.ticker)}">${on?"★":"☆"}</span></span>`+
-      `<span class="nm" title="${esc(st.name)}">${esc(st.name)}</span><span class="gp">${esc(market==="kr"?(st.group||"—"):(st.group||"—"))}</span>`+
+      `<span class="nm" title="${esc(st.desc?st.name+" — "+st.desc:st.name)}">${esc(st.name)}</span><span class="gp">${esc(market==="kr"?(st.group||"—"):(st.group||"—"))}</span>`+
       `<span class="rs" title="RS점수 / 단기RS">${st.score??"—"}<span style="color:var(--muted)">/${st.scoreShort??"—"}</span></span>`+
       `<span class="rs ${pctClass(st.chg1D)}">${st.chg1D==null?"—":(st.chg1D>=0?"+":"")+st.chg1D.toFixed(1)+"%"}</span>`+
       `<span class="tg" title="${esc(tags)}">${esc(tags)||"—"}</span><span class="why">${esc(why)}</span></div>`; }).join("")+`</div>`;

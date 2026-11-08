@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=2.6.0",
     "curl-cffi>=0.15.0",
     "finance-datareader>=0.9.202",
     "pandas>=3.0.3",
