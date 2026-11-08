@@ -90,14 +90,31 @@ def fetch_raw_us(ticker: str) -> str | None:
     return text.strip() if text else None
 
 
+KR_BOILER = re.compile(r"(설립|상장|분할|지주회사로 전환|종속회사|종속기업|자회사|계열회사|본사는|사명을|변경하였)")
+KR_BUSINESS = re.compile(r"(사업|제품|생산|판매|제조|공급|서비스|영위|개발|매출|주력|제공)")
+US_LEAD = re.compile(r"^(.*?)(?:, together with its subsidiaries,|, through its subsidiaries,|, a .*? company,)?\s*"
+                     r"\b(engages in|provides|operates|develops|designs|manufactures|offers|is a|is an|focuses on|owns|produces|"
+                     r"specializes in|discovers|researches|explores|acquires|invests in|distributes|sells|markets)\b", re.I)
+
+
 def fallback_ko(raw: str, market: str) -> str:
-    """No API key: first sentence(s) of the raw text, trimmed."""
+    """No API key: a rule-based trim of the raw text (good enough for KR, English for US).
+    KR: WISEfn 기업개요 is 3 sentences; drop the 설립·상장·종속회사 boilerplate and keep the sentence(s) that say
+        what the company sells. US: strip 'X, Inc., together with its subsidiaries,' and start at the verb."""
     if market == "kr":
-        parts = re.split(r"(?<=[음임됨다])\.\s*", raw)
-        out = ". ".join(p.strip() for p in parts[:2] if p.strip())
-        return (out[:118] + "…") if len(out) > 120 else (out + ("" if out.endswith(".") else "."))
-    first = re.split(r"(?<=[.!?])\s+", raw)[0]
-    return (first[:158] + "…") if len(first) > 160 else first
+        sents = [x.strip() for x in re.split(r"(?<=[음임됨다])\.\s*", raw) if x.strip()]
+        biz = [x for x in sents if KR_BUSINESS.search(x) and not KR_BOILER.search(x)] or \
+              [x for x in sents if KR_BUSINESS.search(x)] or sents
+        out = ". ".join(biz[:2])
+        out = re.sub(r"^동사는\s*", "", out)
+        return (out[:118].rstrip() + "…") if len(out) > 120 else (out + ("" if out.endswith(".") else "."))
+    text = raw.strip()
+    m = US_LEAD.match(text)               # skip "X, Inc., together with its subsidiaries," → start at the verb
+    if m:
+        text = text[m.start(2):]
+        text = text[0].upper() + text[1:]
+    first = re.split(r"(?<=[a-z\)])[.!?]\s+(?=[A-Z])", text)[0]   # sentence end, not "Inc." / "Co."
+    return (first[:158].rstrip() + "…") if len(first) > 160 else first
 
 
 def summarize(items: list[tuple[str, str, str]]) -> dict[str, str]:
