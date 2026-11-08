@@ -244,13 +244,6 @@
 "fallback": true,
 "at": "2026-11-08T11:28:40+00:00"
 },
-"HTFC": {
-"name": "Horizon Technology Finance Corporation 6.25% Notes due 2027",
-"raw": null,
-"ko": null,
-"fallback": null,
-"at": "2026-11-08T11:28:40+00:00"
-},
 "HTFL": {
 "name": "Heartflow Inc.",
 "raw": "HeartFlow, Inc., a medical technology company, provides non-invasive solutions for diagnosing and managing coronary artery diseases the United States and worldwide. Its HeartFlow Platform uses AI and computational fluid dynamics to creates a personalized 3D model of a patient's heart from a single coronary computed tomography angiography, a specialized type of scan that provides detailed images of the heart's arteries. The company provides Heartflow RoadMap Analysis that offers an intuitive anatomic visualization of the coronary arteries; Heartflow FFRCT Analysis, which calculates blood flow and pinpoints clinically; and Heartflow Plaque Analysis that provides a comprehensive assessment of coronary plaque, enabling optimized medical treatment strategies. Its platform provides insights on blood flow, stenosis, and plaque volume and composition by overcoming the limitations of traditional non-invasive imaging tests. HeartFlow, Inc. was formerly known as Cardiovascular Simulation, Inc. and changed its name to HeartFlow, Inc. in May 2009. The company was incorporated in 2007 and is headquartered in San Francisco, California.",
@@ -284,13 +277,6 @@
 "raw": "Keurig Dr Pepper Inc. owns, manufactures, and distributors beverages and single serve brewing systems in the United States and internationally. The company operates through three segments: U.S. Refreshment Beverages, U.S. Coffee, and International. It manufactures and distributes branded concentrates, syrup, and finished beverages, as well as sales of owned brands and third-party brands; tea, cocoa, and other products; and offers finished goods relating to K-Cup pods, single serve brewers, specialty coffee, and ready to drink coffee products. The company offers its products under the Dr Pepper, Canada Dry, Mott's, A&W, Peñafiel, GHOST, Snapple, 7UP, Green Mountain Coffee Roasters, Clamato, Core Hydration, The Original Donut Shop, Sunkist soda, Squirt, C4 Energy, Hawaiian Punch, Electrolit, Bloom, Bai, Evian, Yoo-Hoo, Vita Coco, Big Red, RC Cola, Crush, McCafé, Tim Hortons, Van Houtte, Celestial Seasonings, Bigelow, Starbucks, Dunkin', Folgers, Peet's, and Swiss Miss brands, as well as other partner and private label brands. It markets and sells its products to supermarkets, mass merchandisers, club stores, e-commerce retailers, office superstores, vending machines, fountains, grocery and drug stores, convenience stores, and other small outlets; and directly to consumers through Keurig.com website. Keurig Dr Pepper Inc. was founded in 1981 and is headquartered in Frisco, Texas.",
 "ko": "Keurig Dr Pepper Inc.",
 "fallback": true,
-"at": "2026-11-08T11:28:40+00:00"
-},
-"KMPB": {
-"name": "Kemper Corporation 5.875% Fixed-Rate Reset Junior Subordinated Debentures due 2062",
-"raw": null,
-"ko": null,
-"fallback": null,
 "at": "2026-11-08T11:28:40+00:00"
 },
 "KMTS": {
@@ -340,13 +326,6 @@
 "raw": "Li Auto Inc. operates in the energy vehicle market in the People's Republic of China. The company designs, develops, manufactures, and sells premium smart electric vehicles. Its product line comprises multi-purpose vehicles and sport utility vehicles. The company offers sales and after sales management, and technology development and corporate management services, as well as manufacturing equipment. It offers its products through online and offline channels. The company was formerly known as Leading Ideal Inc. and changed its name to Li Auto Inc. in July 2020. Li Auto Inc. was founded in 2015 and is headquartered in Beijing, the People's Republic of China.",
 "ko": "Li Auto Inc.",
 "fallback": true,
-"at": "2026-11-08T11:28:40+00:00"
-},
-"LION": {
-"name": "Lionsgate Studios Corp Common Shares",
-"raw": null,
-"ko": null,
-"fallback": null,
 "at": "2026-11-08T11:28:40+00:00"
 },
 "LIVN": {

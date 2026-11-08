@@ -166,18 +166,27 @@ def ensure_descriptions(market: str, wanted: list[tuple[str, str]]) -> dict[str,
     have_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
-    # 1) raw text for tickers never fetched (cap per run; a miss is remembered so it is not retried daily)
+    # 1) raw text for tickers not yet fetched (cap per run). A page that loads but has no overview is remembered
+    #    (raw=None); a network/SSL error is NOT cached, so it is retried on the next run.
     need_raw = [(t, n) for t, n in wanted if t not in cache][:MAX_FETCH_PER_RUN]
     t0 = time.time()
+    errs = 0
     for t, n in need_raw:
-        raw = None
-        try:
-            raw = fetch_raw_kr(t) if market == "kr" else fetch_raw_us(t)
-        except Exception as e:  # noqa: BLE001
-            log(f"  desc: raw miss {t}: {e}")
-        cache[t] = {"name": n, "raw": raw, "ko": None, "fallback": None, "at": now}
+        raw, ok = None, False
+        for attempt in range(3):
+            try:
+                raw = fetch_raw_kr(t) if market == "kr" else fetch_raw_us(t)
+                ok = True
+                break
+            except Exception as e:  # noqa: BLE001
+                if attempt == 2:
+                    errs += 1
+                    log(f"  desc: raw error {t} (will retry next run): {str(e)[:80]}")
+                time.sleep(1.5 * (attempt + 1))
+        if ok:
+            cache[t] = {"name": n, "raw": raw, "ko": None, "fallback": None, "at": now}
     if need_raw:
-        log(f"  desc: fetched raw text for {len(need_raw)} tickers ({sum(1 for t,_ in need_raw if cache[t]['raw'])} hits) in {time.time()-t0:.0f}s")
+        log(f"  desc: fetched raw text for {len(need_raw)} tickers ({sum(1 for t,_ in need_raw if cache.get(t,{}).get('raw'))} hits, {errs} errors) in {time.time()-t0:.0f}s")
 
     # 2) summaries: anything with raw text and no Claude summary yet (fallbacks get upgraded once a key is present)
     pending = [(t, cache[t]["name"], cache[t]["raw"]) for t, _ in wanted
@@ -194,8 +203,8 @@ def ensure_descriptions(market: str, wanted: list[tuple[str, str]]) -> dict[str,
             log(f"  desc: Claude failed ({type(e).__name__}: {str(e)[:120]}) → fallback text")
     elif pending and not have_key:
         log(f"  desc: ANTHROPIC_API_KEY not set → {len(pending)} fallback summaries (first sentences)")
-    for t, _, raw in pending:
-        if cache[t].get("ko") is None:
+    for t, _, raw in pending:                 # no Claude summary (yet): rule-based text, recomputed every run so rule tweaks apply
+        if cache[t].get("ko") is None or cache[t].get("fallback"):
             cache[t].update({"ko": fallback_ko(raw, market), "fallback": True, "at": now})
 
     (HERE / f"desc-{market}.json").write_text(json.dumps(cache, ensure_ascii=False, indent=0), encoding="utf-8")
