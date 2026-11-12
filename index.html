@@ -191,6 +191,22 @@
   @media (max-width:560px){.gp-grid{grid-template-columns:1fr}}
   .gp-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 12px 10px;min-width:0}
   .gp-card.index{border-color:#3a4556;background:#181f2a}
+  .gp-card[data-gid]:hover{border-color:#4b5a70}
+  .gp-card .gp-go{color:var(--muted);font-size:11px;margin-left:6px;opacity:0;transition:opacity .15s}
+  .gp-card[data-gid]:hover .gp-go{opacity:1}
+  /* 그룹 드릴다운 배너 (그룹판·군집 표 → 종목 뷰) */
+  .grp-crumb{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:#151c27;border:1px solid #2f3d52;border-radius:10px;padding:8px 12px;margin:0 0 12px;box-shadow:0 6px 14px rgba(0,0,0,.35)}
+  .grp-crumb .back{background:var(--accent2);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .grp-crumb .back:hover{filter:brightness(1.15)}
+  .grp-crumb .nm{font-weight:700;font-size:13.5px}
+  .grp-crumb .nm small{color:var(--muted);font-weight:500;margin-left:6px;font-size:11.5px}
+  .grp-crumb .bds{display:inline-flex;gap:4px}
+  .grp-crumb .st{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+  .grp-crumb .st b{color:var(--text);font-weight:600}
+  .grp-crumb .clr{margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
+  .grp-crumb .clr:hover{color:var(--text);border-color:var(--muted)}
+  @media (max-width:560px){ .grp-crumb .st{flex-basis:100%;order:3} .grp-crumb .bds{display:none} }
   .gp-head{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:6px}
   .gp-head b{font-size:13.5px}
   .gp-head .gp-n{color:var(--muted);font-size:11px}
@@ -458,6 +474,7 @@ html.pwa body{padding-bottom:calc(64px + env(safe-area-inset-bottom))!important}
     <button data-v="setups">셋업</button>
   </div>
 
+  <div class="grp-crumb" id="grpCrumb" style="display:none"></div>
   <div class="controls" id="controls">
     <input id="search" type="text" placeholder="티커 / 종목명 검색…" autocomplete="off">
     <button type="button" class="flt-toggle" id="fltToggle" aria-expanded="false">필터 ▾</button>
@@ -742,12 +759,56 @@ function rebuildGroupOptions(){
   sel.value=groupFilter; sel.style.display="";
 }
 function groupMembersOf(gv){ const gof=(GROUPS[market]&&GROUPS[market].groupOf)||{}; return rows.filter(r=>gof[r.ticker]===gv); }
-function openGroup(gv){
+// 드릴다운: 그룹판 카드·군집 표 그룹명 → 종목 뷰(그룹 필터). 새 history 항목을 쌓아 브라우저·폰 뒤로가기가
+// 원래 화면(그룹판/셋업)으로 돌아가게 하고, 돌아갈 때 보던 스크롤 위치를 복원한다.
+let navFrom=null;     // {view, y, m} — 드릴다운 직전 화면
+function openGroup(gv, push=true){
+  if(push && viewMode!=="stocks"){
+    navFrom={view:viewMode, y:window.scrollY, m:market};
+    try{ history.pushState({rs:"group", g:gv}, "", `#stocks?m=${market}&group=${encodeURIComponent(gv)}`); }catch(e){}
+  }
   pendingGroup=gv;
   if(viewMode!=="stocks") setViewMode("stocks");
-  if(GROUPS[market]){ groupFilter=gv; pendingGroup=""; rebuildGroupOptions(); document.getElementById("search").value=""; document.getElementById("sector").value=""; document.getElementById("industry").value=""; applyFilters(); updateGroupHash(); window.scrollTo({top:0,behavior:"smooth"}); }
+  if(GROUPS[market]){ groupFilter=gv; pendingGroup=""; rebuildGroupOptions(); document.getElementById("search").value=""; document.getElementById("sector").value=""; document.getElementById("industry").value=""; applyFilters(); updateGroupHash(); window.scrollTo({top:0}); }
 }
-function updateGroupHash(){ try{ history.replaceState(null,"", viewMode==="stocks"&&groupFilter ? `#stocks?m=${market}&group=${encodeURIComponent(groupFilter)}` : location.pathname+location.search); }catch(e){} }
+function updateGroupHash(){ try{ history.replaceState(history.state,"", viewMode==="stocks"&&groupFilter ? `#stocks?m=${market}&group=${encodeURIComponent(groupFilter)}` : location.pathname+location.search); }catch(e){} }
+function clearGroup(){ groupFilter=""; pendingGroup=""; rebuildGroupOptions(); }
+// 원래 화면으로: 이 세션에서 드릴다운했으면 history.back()(→ popstate가 복원), 딥링크로 바로 들어왔으면 그룹판으로.
+function goBackFromGroup(){
+  if(history.state && history.state.rs==="group" && navFrom){ history.back(); return; }
+  const to=navFrom ? navFrom.view : "groups", y=navFrom ? navFrom.y : 0;
+  navFrom=null; clearGroup();
+  Promise.resolve(setViewMode(to)).then(()=>window.scrollTo({top:y}));
+}
+function onPopState(){
+  const [h,qs]=location.hash.slice(1).split("?"); const q=new URLSearchParams(qs||"");
+  if(document.getElementById("modalBg").classList.contains("open")) closeChart();
+  if(h==="stocks" && q.get("group")){                           // 앞으로 가기 → 다시 그룹 드릴다운
+    if(q.get("m") && q.get("m")!==market) setMarket(q.get("m"));
+    openGroup(q.get("group"), false); return;
+  }
+  const back=navFrom; navFrom=null;
+  if(groupFilter) clearGroup();
+  if(back && back.m!==market) setMarket(back.m);
+  const v=(h==="etf"&&ETF) || h==="groups" || h==="setups" ? h : (back ? back.view : "stocks");
+  Promise.resolve(setViewMode(v)).then(()=>{ if(back) window.scrollTo({top:back.y}); });
+}
+function renderGroupCrumb(){
+  const el=document.getElementById("grpCrumb");
+  const g=GROUPS[market], c=g && groupFilter ? g.cards.find(x=>gid(x)===groupFilter) : null;
+  if(viewMode!=="stocks" || !groupFilter){ el.style.display="none"; return; }
+  const to=navFrom ? navFrom.view : "groups";
+  const toLbl={groups:"그룹판",setups:"셋업",etf:"산업 ETF",sectors:"섹터 RS"}[to]||"그룹판";
+  const pp=v=>v==null?"—":(v>=0?"+":"")+v.toFixed(0);
+  el.innerHTML=`<button class="back" id="grpBack" title="뒤로 (Esc · 브라우저 뒤로가기)">← ${toLbl}으로</button>`+
+    `<span class="nm">${esc(c?c.name:groupFilter)}${c&&c.ticker&&!c.ticker.startsWith("^")&&market==="us"?`<small>${esc(c.ticker)}</small>`:""}<small>${view.length}종목${c&&c.n&&c.n!==view.length?` / ${c.n}`:""}</small></span>`+
+    (c ? `<span class="bds">${badgeChip(c,"d")}${badgeChip(c,"w")}${badgeChip(c,"m")}</span>`+
+         `<span class="st">1개월 <b>${pp(c.r1M)}%</b> · 3개월 상대 <b>${pp(c.rel3M)}%p</b> · 52주 고점 대비 <b>${pp(c.hi52)}%</b></span>` : "")+
+    `<button class="clr" id="grpClr" title="그룹 필터만 풀고 종목 뷰에 머무르기">전체 종목 ✕</button>`;
+  el.style.display="";
+  document.getElementById("grpBack").onclick=goBackFromGroup;
+  document.getElementById("grpClr").onclick=()=>{ navFrom=null; clearGroup(); applyFilters(); updateGroupHash(); };
+}
 
 function applyFilters(){
   const q=document.getElementById("search").value.trim().toLowerCase();
@@ -771,7 +832,7 @@ function applyFilters(){
 }
 
 function render(){
-  renderTabs(); renderHead(); renderHint(); renderGroups();
+  renderTabs(); renderHead(); renderHint(); renderGroups(); renderGroupCrumb();
   const tb=document.getElementById("tbody");
   const empty=document.getElementById("empty");
   if(view.length===0){
@@ -1005,10 +1066,11 @@ function setViewMode(v){
   document.getElementById("etfview").style.display = v==="etf" ? "" : "none";
   document.getElementById("groupsview").style.display = v==="groups" ? "" : "none";
   document.getElementById("setupsview").style.display = v==="setups" ? "" : "none";
+  if(v!=="stocks") document.getElementById("grpCrumb").style.display="none";
   document.getElementById("marketToggle").style.visibility = v==="etf" ? "hidden" : "";
   document.getElementById("meta").innerHTML = v==="etf" ? etfMetaHtml() : v==="groups" ? gpMetaHtml() : v==="setups" ? stMetaHtml() : marketMetaHtml;
   try{ history.replaceState(null,"",(v==="etf"||v==="groups"||v==="setups") ? "#"+v : location.pathname+location.search); }catch(e){}
-  if(v==="sectors") renderSectors(); else if(v==="etf") renderEtf(); else if(v==="groups") renderGroupBoard(); else if(v==="setups") renderSetups(); else render();
+  if(v==="sectors") return renderSectors(); else if(v==="etf") return renderEtf(); else if(v==="groups") return renderGroupBoard(); else if(v==="setups") return renderSetups(); else return render();
 }
 function refreshView(){
   if(viewMode==="sectors") renderSectors(); else if(viewMode==="etf") renderEtf();
@@ -1205,7 +1267,7 @@ function gpCard(c){
   const sub = c.kind==="group" && c.n!=null ? `<span class="gp-n">${c.n}종목</span>` : (c.kind==="etf"||c.kind==="index")&&c.ticker&&!c.ticker.startsWith("^") ? `<span class="gp-n">${esc(etfCode(c.ticker))}</span>` : "";
   const wics = c.wics&&c.wics.length ? ` title="${esc("WICS: "+c.wics.join(", "))}"` : "";
   return `<div class="gp-card ${c.kind}"${wics}${c.kind==="group"?` data-gid="${esc(gid(c))}" style="cursor:pointer" title="클릭: 구성 종목 보기(종목 뷰)"`:""}>
-    <div class="gp-head"><b>${nm}</b>${sub}<span class="gp-chg ${pctClass(chg)}">${chg==null?"—":(chg>=0?"+":"")+chg.toFixed(1)+"%"}</span></div>
+    <div class="gp-head"><b>${nm}</b>${sub}${c.kind==="group"?`<span class="gp-go">구성 종목 ›</span>`:""}<span class="gp-chg ${pctClass(chg)}">${chg==null?"—":(chg>=0?"+":"")+chg.toFixed(1)+"%"}</span></div>
     ${gpChart(c)}
     <div class="gp-badges">${badgeChip(c,"d")}${badgeChip(c,"w")}${badgeChip(c,"m")}</div>
     <div class="gp-foot">${foot}</div></div>`;
@@ -1867,7 +1929,8 @@ function init(){
   document.getElementById("meta").addEventListener("click", e=>{ if(innerWidth<640 && !e.target.closest("a,button,select,input")) e.currentTarget.classList.toggle("open"); });
   document.getElementById("fltToggle").onclick=e=>{ const c=document.getElementById("controls"), o=c.classList.toggle("open"); e.currentTarget.setAttribute("aria-expanded",o); e.currentTarget.textContent=o?"필터 ▴":"필터 ▾"; };
   document.querySelectorAll("#marketToggle button").forEach(b=>{ b.onclick=()=>setMarket(b.dataset.m); });
-  document.querySelectorAll("#viewToggle button").forEach(b=>{ b.onclick=()=>setViewMode(b.dataset.v); });
+  document.querySelectorAll("#viewToggle button").forEach(b=>{ b.onclick=()=>{ if(groupFilter&&b.dataset.v!=="stocks"){ navFrom=null; clearGroup(); } setViewMode(b.dataset.v); }; });
+  window.addEventListener("popstate", onPopState);
   // row clicks via event delegation (rows are re-rendered as innerHTML)
   document.getElementById("tbody").addEventListener("click", e=>{
     const chart = e.target.closest(".chartlink");
@@ -1880,7 +1943,11 @@ function init(){
   // deviation chart modal controls
   document.getElementById("mClose").onclick=closeChart;
   document.getElementById("modalBg").addEventListener("click", e=>{ if(e.target.id==="modalBg") closeChart(); });
-  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeChart(); });
+  document.addEventListener("keydown", e=>{
+    if(e.key!=="Escape") return;
+    if(document.getElementById("modalBg").classList.contains("open")){ closeChart(); return; }
+    if(viewMode==="stocks" && groupFilter && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement||{}).tagName||"")) goBackFromGroup();
+  });
   document.getElementById("mWin").addEventListener("input", e=>{
     chartWin=parseInt(e.target.value); document.getElementById("mWinL").textContent=chartWin+"D"; drawChart();
   });
