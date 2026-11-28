@@ -145,7 +145,7 @@
     "name": "Anthropic PBC Class A",
     "sector": "Technology",
     "industry": "Computer Software: Prepackaged Software",
-    "marketCap": 1083445623974.0,
+    "marketCap": 1094454184030.0,
     "country": "United States",
     "ipoYear": "2026"
   },
@@ -990,16 +990,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "ADI",
-    "nasdaqSymbol": "ADI",
-    "name": "Analog Devices Inc.",
-    "sector": "Technology",
-    "industry": "Semiconductors",
-    "marketCap": 161411179219.0,
-    "country": "United States",
-    "ipoYear": ""
-  },
-  {
     "ticker": "SCHW",
     "nasdaqSymbol": "SCHW",
     "name": "Charles Schwab Corporation (The)",
@@ -1018,6 +1008,16 @@
     "marketCap": 160821149539.0,
     "country": "Ireland",
     "ipoYear": "2001"
+  },
+  {
+    "ticker": "ADI",
+    "nasdaqSymbol": "ADI",
+    "name": "Analog Devices Inc.",
+    "sector": "Technology",
+    "industry": "Semiconductors",
+    "marketCap": 160781926552.0,
+    "country": "United States",
+    "ipoYear": ""
   },
   {
     "ticker": "TJX",
@@ -1205,7 +1205,7 @@
     "name": "Lowe's Companies Inc.",
     "sector": "Consumer Discretionary",
     "industry": "RETAIL: Building Materials",
-    "marketCap": 132195547957.0,
+    "marketCap": 132194109968.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -2205,7 +2205,7 @@
     "name": "Target Corporation",
     "sector": "Consumer Discretionary",
     "industry": "Department/Specialty Retail Stores",
-    "marketCap": 78216269037.0,
+    "marketCap": 77948614072.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -3145,7 +3145,7 @@
     "name": "Autodesk Inc.",
     "sector": "Technology",
     "industry": "Computer Software: Prepackaged Software",
-    "marketCap": 51578065000.0,
+    "marketCap": 51331280000.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -5125,7 +5125,7 @@
     "name": "FirstEnergy Corp.",
     "sector": "Utilities",
     "industry": "Electric Utilities: Central",
-    "marketCap": 27587161641.0,
+    "marketCap": 27592723599.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -6765,7 +6765,7 @@
     "name": "CGI Inc.",
     "sector": "Consumer Discretionary",
     "industry": "Professional Services",
-    "marketCap": 17272159698.0,
+    "marketCap": 17243113333.0,
     "country": "Canada",
     "ipoYear": ""
   },
@@ -7295,7 +7295,7 @@
     "name": "Burlington Stores Inc.",
     "sector": "Consumer Discretionary",
     "industry": "Department/Specialty Retail Stores",
-    "marketCap": 15708195814.0,
+    "marketCap": 15637071905.0,
     "country": "United States",
     "ipoYear": "2013"
   },
@@ -7400,16 +7400,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "ARMK",
-    "nasdaqSymbol": "ARMK",
-    "name": "Aramark",
-    "sector": "Consumer Discretionary",
-    "industry": "Restaurants",
-    "marketCap": 15229618792.0,
-    "country": "United States",
-    "ipoYear": "2013"
-  },
-  {
     "ticker": "ICLR",
     "nasdaqSymbol": "ICLR",
     "name": "ICON plc Ordinary Shares",
@@ -7418,6 +7408,16 @@
     "marketCap": 15220052864.0,
     "country": "Ireland",
     "ipoYear": "1998"
+  },
+  {
+    "ticker": "ARMK",
+    "nasdaqSymbol": "ARMK",
+    "name": "Aramark",
+    "sector": "Consumer Discretionary",
+    "industry": "Restaurants",
+    "marketCap": 15218118691.0,
+    "country": "United States",
+    "ipoYear": "2013"
   },
   {
     "ticker": "PKX",
@@ -7568,6 +7568,16 @@
     "marketCap": 14704502727.0,
     "country": "United States",
     "ipoYear": "1960"
+  },
+  {
+    "ticker": "SKYD-WS",
+    "nasdaqSymbol": "SKYD.WS",
+    "name": "Skydance Corporation Warrants to Purchase Class B",
+    "sector": "Industrials",
+    "industry": "Broadcasting",
+    "marketCap": 14678687091.0,
+    "country": "United States",
+    "ipoYear": ""
   },
   {
     "ticker": "CNH",
@@ -8265,7 +8275,7 @@
     "name": "BJ's Wholesale Club Holdings Inc.",
     "sector": "Consumer Discretionary",
     "industry": "Department/Specialty Retail Stores",
-    "marketCap": 12846204176.0,
+    "marketCap": 12843392883.0,
     "country": "United States",
     "ipoYear": "2018"
   },
@@ -12285,7 +12295,7 @@
     "name": "Commercial Metals Company",
     "sector": "Industrials",
     "industry": "Steel/Iron Ore",
-    "marketCap": 6289085811.0,
+    "marketCap": 6285221649.0,
     "country": "United States",
     "ipoYear": ""
   },
@@ -12475,7 +12485,7 @@
     "name": "Amentum Holdings Inc.",
     "sector": "Consumer Discretionary",
     "industry": "Business Services",
-    "marketCap": 6083319555.0,
+    "marketCap": 6091263366.0,
     "country": "United States",
     "ipoYear": "2024"
   },
@@ -13500,16 +13510,6 @@
     "ipoYear": "2017"
   },
   {
-    "ticker": "DY",
-    "nasdaqSymbol": "DY",
-    "name": "Dycom Industries Inc.",
-    "sector": "Industrials",
-    "industry": "Water Sewer Pipeline Comm & Power Line Construction",
-    "marketCap": 5355228720.0,
-    "country": "United States",
-    "ipoYear": ""
-  },
-  {
     "ticker": "PSMT",
     "nasdaqSymbol": "PSMT",
     "name": "PriceSmart Inc.",
@@ -13598,6 +13598,16 @@
     "marketCap": 5300632700.0,
     "country": "United States",
     "ipoYear": "2026"
+  },
+  {
+    "ticker": "DY",
+    "nasdaqSymbol": "DY",
+    "name": "Dycom Industries Inc.",
+    "sector": "Industrials",
+    "industry": "Water Sewer Pipeline Comm & Power Line Construction",
+    "marketCap": 5294924473.0,
+    "country": "United States",
+    "ipoYear": ""
   },
   {
     "ticker": "BILL",
@@ -18005,7 +18015,7 @@
     "name": "Telix Pharmaceuticals Limited American Depositary Shares",
     "sector": "Health Care",
     "industry": "Biotechnology: Pharmaceutical Preparations",
-    "marketCap": 3018503507.0,
+    "marketCap": 3023865384.0,
     "country": "Australia",
     "ipoYear": ""
   },
@@ -19630,6 +19640,16 @@
     "ipoYear": ""
   },
   {
+    "ticker": "CENT",
+    "nasdaqSymbol": "CENT",
+    "name": "Central Garden & Pet Company",
+    "sector": "Consumer Discretionary",
+    "industry": "Consumer Specialties",
+    "marketCap": 2390830135.0,
+    "country": "United States",
+    "ipoYear": "1993"
+  },
+  {
     "ticker": "DNOW",
     "nasdaqSymbol": "DNOW",
     "name": "DNOW Inc.",
@@ -19648,16 +19668,6 @@
     "marketCap": 2387305124.0,
     "country": "United States",
     "ipoYear": "2006"
-  },
-  {
-    "ticker": "CENT",
-    "nasdaqSymbol": "CENT",
-    "name": "Central Garden & Pet Company",
-    "sector": "Consumer Discretionary",
-    "industry": "Consumer Specialties",
-    "marketCap": 2386029836.0,
-    "country": "United States",
-    "ipoYear": "1993"
   },
   {
     "ticker": "WLY",
@@ -21780,16 +21790,6 @@
     "ipoYear": ""
   },
   {
-    "ticker": "JJSF",
-    "nasdaqSymbol": "JJSF",
-    "name": "J & J Snack Foods Corp.",
-    "sector": "Consumer Staples",
-    "industry": "Specialty Foods",
-    "marketCap": 1776060473.0,
-    "country": "United States",
-    "ipoYear": "1986"
-  },
-  {
     "ticker": "SFB",
     "nasdaqSymbol": "SFB",
     "name": "Stifel Financial Corporation 5.20% Senior Notes due 2047",
@@ -21808,6 +21808,16 @@
     "marketCap": 1774557236.0,
     "country": "United States",
     "ipoYear": "2014"
+  },
+  {
+    "ticker": "JJSF",
+    "nasdaqSymbol": "JJSF",
+    "name": "J & J Snack Foods Corp.",
+    "sector": "Consumer Staples",
+    "industry": "Specialty Foods",
+    "marketCap": 1773145436.0,
+    "country": "United States",
+    "ipoYear": "1986"
   },
   {
     "ticker": "DHC",
@@ -25540,6 +25550,16 @@
     "ipoYear": "2020"
   },
   {
+    "ticker": "SPH",
+    "nasdaqSymbol": "SPH",
+    "name": "Suburban Propane Partners L.P.",
+    "sector": "Consumer Discretionary",
+    "industry": "Other Specialty Stores",
+    "marketCap": 1123555130.0,
+    "country": "United States",
+    "ipoYear": "1996"
+  },
+  {
     "ticker": "ATEC",
     "nasdaqSymbol": "ATEC",
     "name": "Alphatec Holdings Inc.",
@@ -25668,16 +25688,6 @@
     "marketCap": 1106839746.0,
     "country": "United States",
     "ipoYear": "2014"
-  },
-  {
-    "ticker": "SPH",
-    "nasdaqSymbol": "SPH",
-    "name": "Suburban Propane Partners L.P.",
-    "sector": "Consumer Discretionary",
-    "industry": "Other Specialty Stores",
-    "marketCap": 1105424253.0,
-    "country": "United States",
-    "ipoYear": "1996"
   },
   {
     "ticker": "HFWA",
@@ -26238,16 +26248,6 @@
     "marketCap": 1014180822.0,
     "country": "United States",
     "ipoYear": "2006"
-  },
-  {
-    "ticker": "CFFN",
-    "nasdaqSymbol": "CFFN",
-    "name": "Capitol Federal Financial Inc.",
-    "sector": "Finance",
-    "industry": "Savings Institutions",
-    "marketCap": 1013128161.0,
-    "country": "United States",
-    "ipoYear": ""
   },
   {
     "ticker": "SVRA",
